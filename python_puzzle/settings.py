@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Security Settings (🔴 Change these in production!)
 SECRET_KEY = 'django-insecure-que5$_!$+z_mhe60o(swcskzjm7-b8mh-goawfg=f^11hr8r3g'
-GEMINI_API_KEY = 'AIzaSyCcIuffJK9mLUXn_r_Oc4mJM1KExLdzyCA'  # Development only
+# Development only
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 
