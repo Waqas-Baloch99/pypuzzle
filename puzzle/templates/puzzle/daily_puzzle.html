@@ -1,0 +1,165 @@
+{% extends "puzzle/base.html" %}
+{% block title %}Daily Quest - {{ puzzle.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card rpg-card">
+        <!-- Card Header -->
+        <div class="card-header rpg-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="text-rpg-title">{{ puzzle.title }}</h1>
+                <div class="difficulty-badge">
+                    <span class="badge bg-{% if puzzle.difficulty == 'B' %}success{% elif puzzle.difficulty == 'I' %}warning{% else %}danger{% endif %}">
+                        {{ puzzle.get_difficulty_display }} Quest
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- Quest Description -->
+            <div class="quest-scroll mb-4">
+                <h3 class="rpg-section-title text-rpg-accent">
+                    <i class="bi bi-scroll me-2"></i>Quest Description
+                </h3>
+                <pre class="rpg-pre">{{ puzzle.description }}</pre>
+            </div>
+
+            <!-- Code Submission Form -->
+            <form method="post" action="{% url 'puzzle:submit_solution' puzzle.id %}">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <h3 class="rpg-section-title text-rpg-accent">
+                        <i class="bi bi-code-square me-2"></i>Your Spellbook
+                    </h3>
+                    <textarea class="rpg-textarea form-control" 
+                              name="solution" 
+                              rows="8" 
+                              placeholder="Write your Python incantation here..."
+                              required>{% if request.POST.solution %}{{ request.POST.solution }}{% endif %}</textarea>
+                </div>
+                <button type="submit" class="btn btn-rpg w-100">
+                    <i class="bi bi-magic me-2"></i>Cast Code Spell
+                </button>
+            </form>
+
+            <!-- Messages & Test Results -->
+            <div class="mt-4">
+                {% if messages %}
+                <div class="rpg-messages">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} rpg-alert">
+                        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if test_results %}
+                <div class="rpg-test-results mt-4">
+                    <h3 class="rpg-section-title text-rpg-accent">
+                        <i class="bi bi-clipboard-data me-2"></i>Spell Results
+                    </h3>
+                    <div class="test-cases">
+                        {% for result in test_results.results %}
+                        <div class="test-case {% if result.passed %}bg-rpg-success{% else %}bg-rpg-danger{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-rpg-label">Input:</span>
+                                    <code>{{ result.input }}</code>
+                                </div>
+                                <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ result.expected }} → {{ result.actual }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quest Knowledge -->
+            <div class="rpg-knowledge mt-4">
+                <!-- Hints Section -->
+                <div class="rpg-section mb-4">
+                    <h3 class="rpg-section-title text-rpg-accent">
+                        <i class="bi bi-lightbulb me-2"></i>Ancient Wisdom
+                    </h3>
+                    {% if hints %}
+                    <ul class="rpg-list">
+                        {% for hint in hints %}
+                        <li class="rpg-list-item">
+                            <i class="bi bi-chevron-right me-2 text-rpg-accent"></i>
+                            <span class="text-rpg-text">{{ hint }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <div class="text-rpg-muted">No wisdom scrolls available</div>
+                    {% endif %}
+                </div>
+
+                <!-- Concepts Section -->
+                <div class="rpg-section mb-4">
+                    <h3 class="rpg-section-title text-rpg-accent">
+                        <i class="bi bi-journal-bookmark me-2"></i>Arcane Concepts
+                    </h3>
+                    {% if concepts %}
+                    <div class="rpg-tags">
+                        {% for concept in concepts %}
+                        <span class="rpg-tag">
+                            <i class="bi bi-shield-check me-1"></i>
+                            <span class="text-rpg-text">{{ concept }}</span>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-rpg-muted">No arcane knowledge recorded</div>
+                    {% endif %}
+                </div>
+
+                <!-- Examples Section -->
+                <div class="rpg-section">
+                    <h3 class="rpg-section-title text-rpg-accent">
+                        <i class="bi bi-book me-2"></i>Ancient Prophecies
+                    </h3>
+                    {% if examples %}
+                    <div class="rpg-prophecies">
+                        {% for example in examples %}
+                        <div class="prophecy-card">
+                            <div class="prophecy-input">
+                                <span class="text-rpg-label">Input:</span>
+                                <pre class="rpg-pre">{{ example.input }}</pre>
+                            </div>
+                            <div class="prophecy-output">
+                                <span class="text-rpg-label">Output:</span>
+                                <pre class="rpg-pre">{{ example.output }}</pre>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-rpg-muted">No prophecies foretold</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="card-footer rpg-footer">
+            <div class="d-flex justify-content-between text-rpg-muted">
+                <small>
+                    <i class="bi bi-calendar-event me-1"></i>
+                    {{ puzzle.date|date:"M j, Y" }}
+                </small>
+                <small>
+                    <i class="bi bi-tags me-1"></i>
+                    {{ puzzle.get_category_display }}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

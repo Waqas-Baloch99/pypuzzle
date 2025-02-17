@@ -1,0 +1,58 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">Edit Puzzle: {{ puzzle.title }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control" 
+                           value="{{ puzzle.title }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Difficulty</label>
+                    <select name="difficulty" class="form-select">
+                        <option value="B" {% if puzzle.difficulty == 'B' %}selected{% endif %}>Beginner</option>
+                        <option value="I" {% if puzzle.difficulty == 'I' %}selected{% endif %}>Intermediate</option>
+                        <option value="A" {% if puzzle.difficulty == 'A' %}selected{% endif %}>Advanced</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Problem Description</label>
+                    <textarea name="description" class="form-control" 
+                              rows="4" required>{{ puzzle.description }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Examples (JSON format)</label>
+                    <textarea name="examples" class="form-control font-monospace" 
+                              rows="5" required>{{ examples|json_script }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Hints (JSON format)</label>
+                    <textarea name="hints" class="form-control font-monospace" 
+                              rows="3" required>{{ hints|json_script }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Solution Code</label>
+                    <textarea name="solution" class="form-control font-monospace" 
+                              rows="8" required>{{ puzzle.solution }}</textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save me-2"></i>Save Changes
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

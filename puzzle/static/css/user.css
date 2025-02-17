@@ -1,0 +1,105 @@
+/* static/css/user.css */
+/* RPG Theme Styles - Enhanced Color Scheme */
+:root {
+    /* Color Variables */
+    --rpg-dark: #0d0d0d;
+    --rpg-darker: #0a0a0a;
+    --rpg-accent: #c79a3c;       /* Softened gold */
+    --rpg-secondary: #3c2d1e;   /* Earthy brown */
+    --rpg-text: #e8e6e3;        /* Warmer light gray */
+    --rpg-success: #2d8a4a;     /* Deep forest green */
+    --rpg-danger: #dc143c;       /* Crimson red */
+    --rpg-warning: #d4af37;     /* Metallic gold */
+    --rpg-info: #4a90e2;        /* Mystic blue */
+    --rpg-code: #7ec699;        /* Softer code green */
+    --rpg-border: #46423c;      /* Warm dark gray */
+    --rpg-glow: rgba(199, 154, 60, 0.2); /* Accent glow */
+}
+
+body {
+    background: linear-gradient(
+        to bottom right,
+        var(--rpg-dark),
+        var(--rpg-darker)
+    );
+    color: var(--rpg-text);
+    font-family: 'Space Grotesk', sans-serif;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Headings with metallic effect */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'MedievalSharp', cursive;
+    color: var(--rpg-accent);
+    text-shadow: 2px 2px 3px rgba(0, 0, 0, 0.5),
+                 0 0 8px var(--rpg-glow);
+    margin-bottom: 1.5rem;
+}
+
+/* Enhanced RPG Card */
+.rpg-card {
+    background: linear-gradient(
+        145deg,
+        var(--rpg-dark),
+        var(--rpg-secondary)
+    );
+    border: 2px solid var(--rpg-accent);
+    border-radius: 8px;
+    box-shadow: 0 0 15px var(--rpg-glow);
+    transition: transform 0.3s ease;
+}
+
+.rpg-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Improved Button Effects */
+.btn-rpg {
+    background: linear-gradient(
+        145deg,
+        var(--rpg-accent),
+        var(--rpg-secondary)
+    );
+    border: 1px solid var(--rpg-accent);
+    color: var(--rpg-text);
+    transition: all 0.3s ease;
+}
+
+.btn-rpg:hover {
+    box-shadow: 0 0 20px var(--rpg-glow);
+    transform: scale(1.05);
+}
+
+/* Enhanced Code Blocks */
+.rpg-pre {
+    background-color: var(--rpg-secondary);
+    border: 1px solid var(--rpg-border);
+    color: var(--rpg-code);
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Modernized List Items */
+.rpg-list-item {
+    background: rgba(40, 40, 40, 0.3);
+    border-left: 4px solid var(--rpg-accent);
+    transition: all 0.3s ease;
+}
+
+.rpg-list-item:hover {
+    background: rgba(199, 154, 60, 0.1);
+    transform: translateX(10px);
+}
+
+/* Form Enhancements */
+.rpg-textarea:focus {
+    border-color: var(--rpg-accent);
+    box-shadow: 0 0 15px var(--rpg-glow);
+}
+
+/* Accent Highlights */
+::selection {
+    background: var(--rpg-accent);
+    color: var(--rpg-dark);
+}

@@ -1,0 +1,243 @@
+<!-- templates/admin/manage_puzzles.html -->
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Puzzle Creation Form -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">Generate New Puzzle</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'generate_puzzle' %}">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <!-- Category Selector -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category" class="form-select" required>
+                                <option value="basic">Basic Python</option>
+                                <option value="oop">Object-Oriented</option>
+                                <option value="ds">Data Structures</option>
+                                <option value="file">File Handling</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Difficulty Selector -->
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Difficulty</label>
+                            <select name="difficulty" class="form-select">
+                                <option value="B">Beginner</option>
+                                <option value="I">Intermediate</option>
+                                <option value="A">Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Model Version -->
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <label>Model Version</label>
+                            <select name="model_version" class="form-select">
+                                {% for version in model_versions %}
+                                <option value="{{ version }}">{{ version|title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Custom Prompt -->
+                    <div class="col-md-5">
+                        <div class="form-group">
+                            <label>Custom Prompt</label>
+                            <textarea name="prompt" class="form-control" rows="3" 
+                                placeholder="Example: Create a Python puzzle about list comprehensions..."
+                                required></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Generate Button -->
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-magic me-2"></i>Generate Puzzle
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Existing Puzzles Table -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h2 class="m-0 font-weight-bold text-primary">Puzzle Management</h2>
+            <div class="d-flex gap-2">
+                <form method="get" class="d-flex">
+                    <input type="text" name="search" class="form-control me-2" 
+                           placeholder="Search puzzles..." value="{{ request.GET.search }}">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="puzzleTable">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Difficulty</th>
+                            <th>Created</th>
+                            <th>Tests</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for puzzle in puzzles %}
+                        <tr class="{% if puzzle.test_status == 'fail' %}table-danger{% elif puzzle.test_status == 'pass' %}table-success{% endif %}">
+                            <td>{{ puzzle.title }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if puzzle.category == 'basic' %}bg-primary
+                                    {% elif puzzle.category == 'oop' %}bg-purple
+                                    {% elif puzzle.category == 'ds' %}bg-success
+                                    {% else %}bg-warning text-dark{% endif %}">
+                                    {{ puzzle.get_category_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if puzzle.difficulty == 'B' %}bg-info
+                                    {% elif puzzle.difficulty == 'I' %}bg-warning text-dark
+                                    {% else %}bg-danger{% endif %}">
+                                    {{ puzzle.get_difficulty_display }}
+                                </span>
+                            </td>
+                            <td>{{ puzzle.date|date:"M d, Y" }}</td>
+                            <td>
+                                {% if puzzle.test_results %}
+                                <a href="#" data-bs-toggle="tooltip" 
+                                   title="{% for result in puzzle.test_results_json %}{% if not result.passed %}❌ {{ result.expected }} vs {{ result.actual }}{% endif %}{% endfor %}">
+                                    {{ puzzle.passed_tests }}/{{ puzzle.total_tests }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if puzzle.date == today %}bg-success
+                                    {% else %}bg-secondary{% endif %}">
+                                    {% if puzzle.date == today %}Active{% else %}Archived{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'test_puzzle' puzzle.id %}" 
+                                       class="btn btn-sm btn-warning" 
+                                       title="Test Puzzle"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-check-circle"></i>
+                                    </a>
+                                    <a href="{% url 'edit_puzzle' puzzle.id %}" 
+                                       class="btn btn-sm btn-primary" 
+                                       title="Edit"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <form method="post" 
+                                          action="{% url 'delete_puzzle' puzzle.id %}" 
+                                          class="delete-form">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-danger" 
+                                                title="Delete"
+                                                data-bs-toggle="tooltip"
+                                                onclick="return confirm('Delete this puzzle permanently?');">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'preview_puzzle' puzzle.id %}" 
+                                       class="btn btn-sm btn-info" 
+                                       title="Preview"
+                                       data-bs-toggle="tooltip">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                <i class="bi bi-puzzle display-6"></i>
+                                <p class="mt-2">No puzzles found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <nav aria-label="Pagination">
+                <ul class="pagination justify-content-center">
+                    {% if puzzles.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ puzzles.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            Page {{ puzzles.number }} of {{ puzzles.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if puzzles.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ puzzles.next_page_number }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ puzzles.paginator.num_pages }}">Last &raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Tooltip Initialization -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            boundary: document.body
+        })
+    })
+})
+</script>
+
+<style>
+.delete-form { display: inline-block; }
+.table-hover tr:hover { cursor: pointer; }
+.badge { 
+    min-width: 80px; 
+    font-weight: 500;
+}
+.bg-purple {
+    background-color: #6f42c1!important;
+}
+</style>
+{% endblock %}

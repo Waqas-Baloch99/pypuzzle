@@ -1,0 +1,64 @@
+{% extends "puzzle/base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="hero text-center mb-5">
+        <h1 class="display-4 mb-3">Daily Python Puzzles</h1>
+        <p class="lead">Enhance your Python skills with daily coding challenges!</p>
+        
+        {% if not user.is_authenticated %}
+        <div class="auth-links mt-4">
+            <a href="{% url 'puzzle:signup' %}" class="btn btn-primary btn-lg">Get Started</a>
+            <a href="{% url 'puzzle:login' %}" class="btn btn-outline-secondary btn-lg">Login</a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if user.is_authenticated %}
+    <div class="learning-categories">
+        <h2 class="h4 mb-4 text-rpg-accent">
+            <i class="bi bi-journal-bookmark"></i> Learning Paths
+        </h2>
+        
+        <div class="row g-4">
+            {% for category in categories %}
+            <div class="col-md-6 col-lg-3">
+                <div class="rpg-card h-100 p-3">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="bi {{ category.icon_class }} fs-4 me-2 text-rpg-accent"></i>
+                        <h3 class="h5 mb-0">{{ category.name }}</h3>
+                    </div>
+                    <p class="text-muted small">{{ category.description|truncatechars:100 }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .hero {
+        padding: 3rem 1rem;
+        background: rgba(12, 12, 12, 0.9);
+        border-radius: 1rem;
+        border: 1px solid var(--rpg-accent);
+        box-shadow: 0 0 20px rgba(218, 165, 32, 0.1);
+    }
+    
+    .rpg-card {
+        background: linear-gradient(
+            145deg,
+            var(--rpg-dark),
+            var(--rpg-darker)
+        );
+        border: 1px solid var(--rpg-accent);
+        transition: transform 0.3s ease;
+    }
+    
+    .rpg-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(218, 165, 32, 0.2);
+    }
+</style>
+{% endblock %}
