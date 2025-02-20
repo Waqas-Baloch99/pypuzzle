@@ -1,4 +1,5 @@
 {% extends "admin/base_admin.html" %}
+{% load i18n %}
 
 {% block content %}
 <div class="card mb-4">
@@ -6,6 +7,22 @@
         <h1 class="h3 mb-0">Admin Dashboard</h1>
     </div>
     <div class="card-body">
+        <!-- Quick Actions -->
+        <div class="module mb-4">
+            <h2>Quick Actions</h2>
+            <div class="btn-group" role="group">
+                <a href="{% url 'puzzle_admin:manage-puzzles' %}" class="btn btn-primary">
+                    <i class="bi bi-puzzle"></i> Manage Puzzles
+                </a>
+                <a href="{% url 'puzzle_admin:manage-users' %}" class="btn btn-success">
+                    <i class="bi bi-people"></i> Manage Users
+                </a>
+                <a href="{% url 'puzzle_admin:generate-puzzle' %}" class="btn btn-info">
+                    <i class="bi bi-magic"></i> Generate Puzzle
+                </a>
+            </div>
+        </div>
+
         <!-- Puzzle Statistics Cards -->
         <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
             <div class="col">
@@ -34,57 +51,6 @@
             </div>
         </div>
 
-        <!-- Study Category Management Section -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h2 class="h4 mb-0">Study Categories</h2>
-                <div>
-                    <a href="{% url 'puzzle:study_category_add' %}" class="btn btn-sm btn-success">
-                        <i class="bi bi-plus-lg"></i> Add Category
-                    </a>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    {% for category in categories %}
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <h5 class="card-title mb-0">
-                                        <i class="bi {{ category.icon_class }} me-1"></i>
-                                        {{ category.name }}
-                                    </h5>
-                                    <span class="badge bg-primary">
-                                        {{ category.materials.count }} Lessons
-                                    </span>
-                                </div>
-                                <p class="text-muted small mb-2">{{ category.description|truncatechars:60 }}</p>
-                                <div class="d-flex gap-2">
-                                    <a href="#" 
-                                       class="btn btn-sm btn-outline-primary">
-                                        View Content
-                                    </a>
-                                    <a href="#" 
-                                       class="btn btn-sm btn-outline-secondary">
-                                        Edit
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    {% empty %}
-                    <div class="col-12">
-                        <div class="alert alert-warning mb-0">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            No categories found. Create your first learning category!
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
         <!-- Recent Users Table -->
         <div class="card">
             <div class="card-header">
@@ -103,12 +69,12 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in stats.users %}
+                            {% for user in stats.recent_users %}
                             <tr>
                                 <td>{{ forloop.counter }}</td>
                                 <td>{{ user.username }}</td>
                                 <td>{{ user.email|default:"-" }}</td>
-                                <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+                                <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
                                 <td>{{ user.last_login|date:"Y-m-d H:i"|default:"Never" }}</td>
                             </tr>
                             {% empty %}
@@ -128,15 +94,17 @@
 
 <style>
     .card-title .bi {
-        color: var(--rpg-accent);
-        font-size: 1.2rem;
+        margin-right: 0.5rem;
     }
-    .badge.bg-primary {
-        background-color: var(--rpg-accent) !important;
+    .btn-group .btn {
+        transition: all 0.3s ease;
     }
-    .alert-warning {
-        background-color: rgba(255, 193, 7, 0.1);
-        border-color: #ffc107;
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,0.03);
     }
 </style>
 {% endblock %}

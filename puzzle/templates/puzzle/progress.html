@@ -1,4 +1,5 @@
 {% extends "puzzle/base.html" %}
+
 {% block title %}Quest Log{% endblock %}
 
 {% block content %}
@@ -11,44 +12,47 @@
         </div>
 
         <div class="card-body">
-            {% if progress %}
+            {% if submissions %}
             <div class="rpg-progress-list">
                 <div class="rpg-list-header">
                     <div class="row fw-bold text-rpg-accent">
                         <div class="col-md-5">Quest Name</div>
-                        <div class="col-md-3">Completion Date</div>
+                        <div class="col-md-3">Submission Date</div>
                         <div class="col-md-2">Attempts</div>
                         <div class="col-md-2">Status</div>
                     </div>
                 </div>
-                
-                {% for p in progress %}
+
+                {% for submission in submissions %}
                 <div class="rpg-progress-item">
                     <div class="row align-items-center">
                         <div class="col-md-5">
                             <i class="bi bi-question-square me-2 text-rpg-accent"></i>
-                            {{ p.puzzle.title }}
+                            {{ submission.puzzle.title }}
                         </div>
+
                         <div class="col-md-3">
-                            {% if p.solved_date %}
                             <i class="bi bi-calendar-check me-2"></i>
-                            {{ p.solved_date|date:"M j, Y" }}
-                            {% else %}
-                            <span class="text-rpg-muted">Not Yet Conquered</span>
-                            {% endif %}
+                            {{ submission.submission_date|date:"M j, Y" }}
                         </div>
+
                         <div class="col-md-2">
                             <i class="bi bi-lightning-charge me-2"></i>
-                            {{ p.attempts }}
+                            {{ submission.attempt_count }}
                         </div>
+
                         <div class="col-md-2">
-                            {% if p.solved %}
+                            {% if submission.status == 'pass' %}
                             <span class="badge bg-rpg-success">
-                                <i class="bi bi-check-circle me-1"></i>Victorious
+                                <i class="bi bi-check-circle me-1"></i>Approved
+                            </span>
+                            {% elif submission.status == 'fail' %}
+                            <span class="badge bg-rpg-danger">
+                                <i class="bi bi-x-circle me-1"></i>Needs Revision
                             </span>
                             {% else %}
                             <span class="badge bg-rpg-warning">
-                                <i class="bi bi-hourglass-split me-1"></i>Ongoing
+                                <i class="bi bi-hourglass-split me-1"></i>Pending
                             </span>
                             {% endif %}
                         </div>
@@ -65,7 +69,7 @@
                     <div class="col-md-6">
                         <div class="rpg-stat-item">
                             <i class="bi bi-shield-check me-2"></i>
-                            Total Quests Attempted: {{ progress|length }}
+                            Total Attempted: {{ submissions|length }}
                         </div>
                     </div>
                     <div class="col-md-6">

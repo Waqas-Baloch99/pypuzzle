@@ -1,165 +1,415 @@
 {% extends "puzzle/base.html" %}
-{% block title %}Daily Quest - {{ puzzle.title }}{% endblock %}
+{% block title %}Daily Quest{% if puzzle %} - {{ puzzle.title }}{% endif %}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
+    {% if puzzle %}
     <div class="card rpg-card">
-        <!-- Card Header -->
-        <div class="card-header rpg-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="text-rpg-title">{{ puzzle.title }}</h1>
-                <div class="difficulty-badge">
+        <!-- Enhanced Timer Header -->
+        <div class="rpg-timer-header">
+            <div class="rpg-timer-container">
+                <div id="questTimer" class="glowing-timer">
+                    <div class="timer-grid">
+                        <div class="timer-block">
+                            <div class="timer-number">0</div>
+                            <div class="timer-label">Days</div>
+                        </div>
+                        <div class="timer-block">
+                            <div class="timer-number">00</div>
+                            <div class="timer-label">Hours</div>
+                        </div>
+                        <div class="timer-block">
+                            <div class="timer-number">00</div>
+                            <div class="timer-label">Minutes</div>
+                        </div>
+                        <div class="timer-block">
+                            <div class="timer-number">00</div>
+                            <div class="timer-label">Seconds</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Content -->
+        <div class="card rpg-card-inner">
+            <div class="card-header rpg-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1 class="text-rpg-title mb-0">{{ puzzle.title }}</h1>
                     <span class="badge bg-{% if puzzle.difficulty == 'B' %}success{% elif puzzle.difficulty == 'I' %}warning{% else %}danger{% endif %}">
                         {{ puzzle.get_difficulty_display }} Quest
                     </span>
                 </div>
             </div>
-        </div>
 
-        <div class="card-body">
-            <!-- Quest Description -->
-            <div class="quest-scroll mb-4">
-                <h3 class="rpg-section-title text-rpg-accent">
-                    <i class="bi bi-scroll me-2"></i>Quest Description
-                </h3>
-                <pre class="rpg-pre">{{ puzzle.description }}</pre>
-            </div>
-
-            <!-- Code Submission Form -->
-            <form method="post" action="{% url 'puzzle:submit_solution' puzzle.id %}">
-                {% csrf_token %}
-                <div class="mb-4">
-                    <h3 class="rpg-section-title text-rpg-accent">
-                        <i class="bi bi-code-square me-2"></i>Your Spellbook
-                    </h3>
-                    <textarea class="rpg-textarea form-control" 
-                              name="solution" 
-                              rows="8" 
-                              placeholder="Write your Python incantation here..."
-                              required>{% if request.POST.solution %}{{ request.POST.solution }}{% endif %}</textarea>
-                </div>
-                <button type="submit" class="btn btn-rpg w-100">
-                    <i class="bi bi-magic me-2"></i>Cast Code Spell
-                </button>
-            </form>
-
-            <!-- Messages & Test Results -->
-            <div class="mt-4">
-                {% if messages %}
-                <div class="rpg-messages">
-                    {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} rpg-alert">
-                        <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
-                        {{ message }}
-                    </div>
-                    {% endfor %}
+            <div class="card-body">
+                <!-- Time Remaining Alert -->
+                {% if time_remaining <= 0 %}
+                <div class="alert alert-danger rpg-alert">
+                    <i class="bi bi-clock-history me-2"></i>
+                    The gates to this quest have closed! You can no longer submit solutions.
                 </div>
                 {% endif %}
 
-                {% if test_results %}
-                <div class="rpg-test-results mt-4">
+                <!-- Quest Description Section -->
+                <section class="quest-scroll mb-4">
                     <h3 class="rpg-section-title text-rpg-accent">
-                        <i class="bi bi-clipboard-data me-2"></i>Spell Results
+                        <i class="bi bi-scroll me-2"></i>Quest Description
                     </h3>
-                    <div class="test-cases">
-                        {% for result in test_results.results %}
-                        <div class="test-case {% if result.passed %}bg-rpg-success{% else %}bg-rpg-danger{% endif %}">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="text-rpg-label">Input:</span>
-                                    <code>{{ result.input }}</code>
+                    <pre class="rpg-pre">{{ puzzle.description|linebreaksbr }}</pre>
+                </section>
+
+                <!-- Code Submission Section -->
+                <section class="mb-4">
+                    <form method="post" action="{% url 'puzzle:submit_solution' puzzle.id %}" id="submissionForm">
+                        {% csrf_token %}
+                        <h3 class="rpg-section-title text-rpg-accent">
+                            <i class="bi bi-code-square me-2"></i>Your Spellbook
+                            <span class="float-end text-muted small">
+                                Attempts: {{ submission_count }}
+                            </span>
+                        </h3>
+                        
+                        <textarea class="rpg-textarea form-control" 
+                                name="solution" 
+                                rows="8" 
+                                placeholder="Write your Python incantation here..."
+                                {% if time_remaining <= 0 %}disabled{% endif %}
+                                required>{% if request.POST.solution %}{{ request.POST.solution }}{% endif %}</textarea>
+                        
+                        <button type="submit" 
+                                class="btn btn-rpg w-100 mt-3"
+                                {% if time_remaining <= 0 %}disabled{% endif %}>
+                            <i class="bi bi-magic me-2"></i>
+                            {% if time_remaining > 0 %}
+                                Cast Code Spell
+                            {% else %}
+                                Quest Closed
+                            {% endif %}
+                        </button>
+                    </form>
+                </section>
+
+                <!-- Results Section -->
+                {% if messages or test_results %}
+                <section class="rpg-results mt-4">
+                    {% if messages %}
+                    <div class="rpg-messages">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} rpg-alert">
+                            <i class="bi bi-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+                            {{ message }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if test_results %}
+                    <div class="rpg-test-results mt-4">
+                        <h3 class="rpg-section-title text-rpg-accent">
+                            <i class="bi bi-clipboard-data me-2"></i>Spell Results
+                        </h3>
+                        <div class="test-cases">
+                            {% for result in test_results.results %}
+                            <div class="test-case {% if result.passed %}bg-rpg-success{% else %}bg-rpg-danger{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-rpg-label">Input:</span>
+                                        <code>{{ result.input }}</code>
+                                    </div>
+                                    <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
+                                        {{ result.expected }} → {{ result.actual }}
+                                    </span>
                                 </div>
-                                <span class="badge {% if result.passed %}bg-success{% else %}bg-danger{% endif %}">
-                                    {{ result.expected }} → {{ result.actual }}
-                                </span>
                             </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
-                </div>
+                    {% endif %}
+                </section>
                 {% endif %}
-            </div>
 
-            <!-- Quest Knowledge -->
-            <div class="rpg-knowledge mt-4">
-                <!-- Hints Section -->
-                <div class="rpg-section mb-4">
-                    <h3 class="rpg-section-title text-rpg-accent">
-                        <i class="bi bi-lightbulb me-2"></i>Ancient Wisdom
-                    </h3>
-                    {% if hints %}
-                    <ul class="rpg-list">
-                        {% for hint in hints %}
-                        <li class="rpg-list-item">
-                            <i class="bi bi-chevron-right me-2 text-rpg-accent"></i>
-                            <span class="text-rpg-text">{{ hint }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <div class="text-rpg-muted">No wisdom scrolls available</div>
-                    {% endif %}
-                </div>
-
-                <!-- Concepts Section -->
-                <div class="rpg-section mb-4">
-                    <h3 class="rpg-section-title text-rpg-accent">
-                        <i class="bi bi-journal-bookmark me-2"></i>Arcane Concepts
-                    </h3>
-                    {% if concepts %}
-                    <div class="rpg-tags">
-                        {% for concept in concepts %}
-                        <span class="rpg-tag">
-                            <i class="bi bi-shield-check me-1"></i>
-                            <span class="text-rpg-text">{{ concept }}</span>
-                        </span>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-rpg-muted">No arcane knowledge recorded</div>
-                    {% endif %}
-                </div>
-
-                <!-- Examples Section -->
-                <div class="rpg-section">
-                    <h3 class="rpg-section-title text-rpg-accent">
-                        <i class="bi bi-book me-2"></i>Ancient Prophecies
-                    </h3>
+                <!-- Knowledge Section -->
+                <section class="rpg-knowledge mt-4">
+                    <!-- Examples -->
                     {% if examples %}
-                    <div class="rpg-prophecies">
-                        {% for example in examples %}
-                        <div class="prophecy-card">
-                            <div class="prophecy-input">
-                                <span class="text-rpg-label">Input:</span>
-                                <pre class="rpg-pre">{{ example.input }}</pre>
+                    <div class="rpg-section mb-4">
+                        <h3 class="rpg-section-title text-rpg-accent">
+                            <i class="bi bi-book me-2"></i>Ancient Prophecies
+                        </h3>
+                        <div class="rpg-prophecies">
+                            {% for example in examples %}
+                            <div class="prophecy-card">
+                                <div class="prophecy-input">
+                                    <span class="text-rpg-label">Input:</span>
+                                    <pre class="rpg-pre">{{ example.input }}</pre>
+                                </div>
+                                <div class="prophecy-output">
+                                    <span class="text-rpg-label">Output:</span>
+                                    <pre class="rpg-pre">{{ example.output }}</pre>
+                                </div>
                             </div>
-                            <div class="prophecy-output">
-                                <span class="text-rpg-label">Output:</span>
-                                <pre class="rpg-pre">{{ example.output }}</pre>
-                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-rpg-muted">No prophecies foretold</div>
                     {% endif %}
-                </div>
+                </section>
             </div>
-        </div>
 
-        <!-- Card Footer -->
-        <div class="card-footer rpg-footer">
-            <div class="d-flex justify-content-between text-rpg-muted">
-                <small>
-                    <i class="bi bi-calendar-event me-1"></i>
-                    {{ puzzle.date|date:"M j, Y" }}
-                </small>
-                <small>
-                    <i class="bi bi-tags me-1"></i>
-                    {{ puzzle.get_category_display }}
-                </small>
+            <!-- Card Footer -->
+            <footer class="card-footer rpg-footer">
+                <div class="d-flex justify-content-between text-rpg-muted">
+                    <small>
+                        <i class="bi bi-hourglass me-1"></i>
+                        {% if time_remaining > 0 %}
+                            Closes: {{ puzzle.deadline|date:"M j, Y H:i" }}
+                        {% else %}
+                            Closed: {{ puzzle.deadline|date:"M j, Y H:i" }}
+                        {% endif %}
+                    </small>
+                    <small>
+                        <i class="bi bi-shield-lock me-1"></i>
+                        {{ puzzle.get_category_display }}
+                    </small>
+                </div>
+            </footer>
+        </div>
+    </div>
+    {% else %}
+    <div class="card rpg-card">
+        <div class="card-body text-center py-5">
+            <div class="rpg-empty-state">
+                <i class="bi bi-hourglass-split text-rpg-muted mb-3" style="font-size: 3rem"></i>
+                <h2 class="text-rpg-title mb-3">No Quest Today</h2>
+                <p class="text-rpg-muted mb-4">
+                    The arcane gates to today's challenge remain closed.<br>
+                    Return when the stars align anew!
+                </p>
+                <a href="{% url 'puzzle:home' %}" class="btn btn-rpg">
+                    <i class="bi bi-arrow-left me-2"></i>Return to Quest Board
+                </a>
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
+{% endblock %}{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if puzzle %}
+    // Convert server time to client-side Date object with proper timezone handling
+    const serverDeadline = new Date("{{ puzzle.deadline|date:'c' }}").getTime();
+    const timerElement = document.getElementById('questTimer');
+    let timerUpdate;
+
+    function updateTimer() {
+        try {
+            const now = new Date().getTime();
+            const remaining = serverDeadline - now;
+            
+            if (isNaN(remaining) || remaining <= 0) {
+                timerElement.innerHTML = `
+                    <div class="timer-expired">
+                        <i class="bi bi-hourglass-top"></i>
+                        <div>QUEST ENDED</div>
+                    </div>
+                `;
+                clearInterval(timerUpdate);
+                document.querySelectorAll('#submissionForm input, #submissionForm button, #submissionForm textarea').forEach(el => el.disabled = true);
+                return;
+            }
+
+            // Calculate time components
+            const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+
+            // Update timer display
+            timerElement.innerHTML = `
+                <div class="timer-grid">
+                    <div class="timer-block">
+                        <div class="timer-number">${days}</div>
+                        <div class="timer-label">Days</div>
+                    </div>
+                    <div class="timer-block">
+                        <div class="timer-number">${String(hours).padStart(2, '0')}</div>
+                        <div class="timer-label">Hours</div>
+                    </div>
+                    <div class="timer-block">
+                        <div class="timer-number">${String(minutes).padStart(2, '0')}</div>
+                        <div class="timer-label">Minutes</div>
+                    </div>
+                    <div class="timer-block">
+                        <div class="timer-number">${String(seconds).padStart(2, '0')}</div>
+                        <div class="timer-label">Seconds</div>
+                    </div>
+                </div>
+            `;
+
+            // Add urgency effect for last hour
+            timerElement.classList.toggle('glow-alert', remaining < 3600000);
+        } catch (error) {
+            console.error('Timer update error:', error);
+        }
+    }
+
+    // Initialize timer
+    if ({{ time_remaining|default:0 }} > 0) {
+        updateTimer(); // Initial update
+        timerUpdate = setInterval(updateTimer, 1000);
+    } else {
+        document.querySelectorAll('#submissionForm input, #submissionForm button, #submissionForm textarea').forEach(el => el.disabled = true);
+        timerElement.innerHTML = `
+            <div class="timer-expired">
+                <i class="bi bi-hourglass-top"></i>
+                <div>QUEST ENDED</div>
+            </div>
+        `;
+    }
+    {% endif %}
+});
+</script>
+
+<style>
+/* Add this to ensure proper time formatting */
+.timer-number {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Enhanced Timer Styling */
+.rpg-timer-header {
+    background: linear-gradient(45deg, #2c3e50, #34495e);
+    padding: 2rem 1rem;
+    border-radius: 15px 15px 0 0;
+}
+
+.glowing-timer {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 2px solid #3498db;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.5);
+}
+
+.timer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2rem;
+    text-align: center;
+}
+
+.timer-block {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid #2980b9;
+}
+
+.timer-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: #ecf0f1;
+    text-shadow: 0 0 10px rgba(52, 152, 219, 0.7);
+}
+
+.timer-label {
+    font-size: 0.9rem;
+    color: #bdc3c7;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 0.5rem;
+}
+
+.timer-expired {
+    font-size: 2rem;
+    color: #e74c3c;
+    text-align: center;
+    padding: 1rem;
+    animation: pulse 2s infinite;
+}
+
+.glow-alert {
+    animation: glow-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0% { box-shadow: 0 0 10px #e74c3c; }
+    50% { box-shadow: 0 0 25px #e74c3c; }
+    100% { box-shadow: 0 0 10px #e74c3c; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* ...existing styles... */
+.rpg-alert {
+    border-radius: 8px;
+    border: 2px solid #454d55;
+    background: #1a1d20;
+}
+
+.rpg-timer {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: 10px;
+    border: 2px solid #495057;
+}
+
+.timer-block {
+    text-align: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.timer-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    line-height: 1;
+}
+
+.timer-label {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 0.25rem;
+}
+
+.timer-expired {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #fff;
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.blink {
+    animation: timer-blink 1s ease-in-out infinite;
+}
+
+@keyframes timer-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.disabled-form {
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+#submissionForm:disabled {
+    cursor: not-allowed;
+}
+</style>
 {% endblock %}

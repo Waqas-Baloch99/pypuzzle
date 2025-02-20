@@ -21,7 +21,7 @@
     <!-- Admin Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'custom_admin_dashboard' %}">
+            <a class="navbar-brand" href="{% url 'puzzle_admin:custom-dashboard' %}">
                 <i class="bi bi-puzzle-fill me-2"></i>Puzzle Admin
             </a>
             
@@ -34,22 +34,28 @@
             <div class="collapse navbar-collapse" id="adminNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item mx-2">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'custom_admin_dashboard' %}active{% endif %}" 
-                           href="{% url 'custom_admin_dashboard' %}">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'custom-dashboard' %}active{% endif %}" 
+                           href="{% url 'puzzle_admin:custom-dashboard' %}">
                             <i class="bi bi-speedometer2 me-1"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item mx-2">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'manage_users' %}active{% endif %}" 
-                           href="{% url 'manage_users' %}">
+                        <a class="nav-link {% if 'manage-users' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'puzzle_admin:manage-users' %}">
                             <i class="bi bi-people me-1"></i>Users
                         </a>
                     </li>
                     <li class="nav-item mx-2">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'manage_puzzles' %}active{% endif %}" 
-                           href="{% url 'manage_puzzles' %}">
+                        <a class="nav-link {% if 'manage-puzzles' in request.resolver_match.url_name %}active{% endif %}" 
+                           href="{% url 'puzzle_admin:manage-puzzles' %}">
                             <i class="bi bi-puzzle me-1"></i>Puzzles
                         </a>
+                        <li class="nav-item mx-2">
+                            <a class="nav-link {% if 'manage-submissions' in request.resolver_match.url_name %}active{% endif %}" 
+                               href="{% url 'puzzle_admin:manage-submissions' %}">
+                                <i class="bi bi-file-earmark-text me-1"></i>Submissions
+                            </a>
+                        </li>
                     </li>
                     <li class="nav-item mx-2">
                         <a class="nav-link" href="{% url 'admin:index' %}">
@@ -61,7 +67,7 @@
                 <!-- Admin User Section -->
                 <div class="d-flex align-items-center text-light">
                     <span class="me-3">
-                        <i class="bi bi-person-circle me-1"></i>{{ request.user.email }}
+                        <i class="bi bi-person-circle me-1"></i>{{ request.user.get_username }}
                     </span>
                     <a href="{% url 'admin:logout' %}" class="btn btn-outline-light">
                         <i class="bi bi-box-arrow-right"></i>

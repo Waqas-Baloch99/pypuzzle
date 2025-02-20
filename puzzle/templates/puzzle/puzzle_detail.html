@@ -1,0 +1,40 @@
+{% extends "puzzle/base.html" %}
+
+{% block title %}{{ puzzle.title }} Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card rpg-card">
+        <div class="card-header rpg-header">
+            <h1 class="text-rpg-title">
+                <i class="bi bi-scroll me-2"></i>{{ puzzle.title }}
+            </h1>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h4 class="text-rpg-accent">Quest Description</h4>
+                    <p class="text-rpg-text">{{ puzzle.description }}</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="rpg-stat-card">
+                        <h4><i class="bi bi-bar-chart me-2"></i>Your Stats</h4>
+                        <ul class="list-group rpg-list">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Attempts
+                                <span class="badge bg-rpg-primary">{{ submissions.count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Best Result
+                                <span class="badge {% if submissions.first.status == 'pass' %}bg-rpg-success{% else %}bg-rpg-warning{% endif %}">
+                                    {{ submissions.first.status|title }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

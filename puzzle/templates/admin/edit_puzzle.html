@@ -7,17 +7,17 @@
             <h4 class="m-0 font-weight-bold text-primary">Edit Puzzle: {{ puzzle.title }}</h4>
         </div>
         <div class="card-body">
-            <form method="post">
+            <form method="post" action="{% url 'puzzle_admin:edit-puzzle' puzzle.id %}">
                 {% csrf_token %}
                 <div class="mb-3">
                     <label class="form-label">Title</label>
                     <input type="text" name="title" class="form-control" 
-                           value="{{ puzzle.title }}" required>
+                           value="{{ puzzle.title }}" maxlength="200" required>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label">Difficulty</label>
-                    <select name="difficulty" class="form-select">
+                    <select name="difficulty" class="form-select" required>
                         <option value="B" {% if puzzle.difficulty == 'B' %}selected{% endif %}>Beginner</option>
                         <option value="I" {% if puzzle.difficulty == 'I' %}selected{% endif %}>Intermediate</option>
                         <option value="A" {% if puzzle.difficulty == 'A' %}selected{% endif %}>Advanced</option>
@@ -33,13 +33,15 @@
                 <div class="mb-3">
                     <label class="form-label">Examples (JSON format)</label>
                     <textarea name="examples" class="form-control font-monospace" 
-                              rows="5" required>{{ examples|json_script }}</textarea>
+                              rows="5" required>{{ puzzle.examples }}</textarea>
+                    <small class="text-muted">Example format: [["input1", "output1"], ["input2", "output2"]]</small>
                 </div>
                 
                 <div class="mb-3">
                     <label class="form-label">Hints (JSON format)</label>
                     <textarea name="hints" class="form-control font-monospace" 
-                              rows="3" required>{{ hints|json_script }}</textarea>
+                              rows="3" required>{{ puzzle.hints }}</textarea>
+                    <small class="text-muted">Example format: ["Hint 1", "Hint 2", "Hint 3"]</small>
                 </div>
                 
                 <div class="mb-3">
@@ -48,11 +50,29 @@
                               rows="8" required>{{ puzzle.solution }}</textarea>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-save me-2"></i>Save Changes
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'puzzle_admin:manage-puzzles' %}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
             </form>
         </div>
     </div>
 </div>
+
+<script>
+// Add JSON validation for examples and hints
+document.querySelector('form').addEventListener('submit', function(e) {
+    try {
+        JSON.parse(document.querySelector('[name="examples"]').value);
+        JSON.parse(document.querySelector('[name="hints"]').value);
+    } catch (error) {
+        alert('Invalid JSON format: ' + error.message);
+        e.preventDefault();
+    }
+});
+</script>
 {% endblock %}
