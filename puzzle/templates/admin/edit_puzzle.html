@@ -1,4 +1,5 @@
 {% extends "admin/base_admin.html" %}
+<<<<<<< HEAD
 {% load static %}
 
 {% block extrastyle %}
@@ -167,5 +168,82 @@
         const levelSelect = document.getElementById('level');
         togglePuzzleType(levelSelect);
     });
+=======
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">Edit Puzzle: {{ puzzle.title }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'puzzle_admin:edit-puzzle' puzzle.id %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control" 
+                           value="{{ puzzle.title }}" maxlength="200" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Difficulty</label>
+                    <select name="difficulty" class="form-select" required>
+                        <option value="B" {% if puzzle.difficulty == 'B' %}selected{% endif %}>Beginner</option>
+                        <option value="I" {% if puzzle.difficulty == 'I' %}selected{% endif %}>Intermediate</option>
+                        <option value="A" {% if puzzle.difficulty == 'A' %}selected{% endif %}>Advanced</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Problem Description</label>
+                    <textarea name="description" class="form-control" 
+                              rows="4" required>{{ puzzle.description }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Examples (JSON format)</label>
+                    <textarea name="examples" class="form-control font-monospace" 
+                              rows="5" required>{{ puzzle.examples }}</textarea>
+                    <small class="text-muted">Example format: [["input1", "output1"], ["input2", "output2"]]</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Hints (JSON format)</label>
+                    <textarea name="hints" class="form-control font-monospace" 
+                              rows="3" required>{{ puzzle.hints }}</textarea>
+                    <small class="text-muted">Example format: ["Hint 1", "Hint 2", "Hint 3"]</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Solution Code</label>
+                    <textarea name="solution" class="form-control font-monospace" 
+                              rows="8" required>{{ puzzle.solution }}</textarea>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Save Changes
+                    </button>
+                    <a href="{% url 'puzzle_admin:manage-puzzles' %}" class="btn btn-secondary">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Add JSON validation for examples and hints
+document.querySelector('form').addEventListener('submit', function(e) {
+    try {
+        JSON.parse(document.querySelector('[name="examples"]').value);
+        JSON.parse(document.querySelector('[name="hints"]').value);
+    } catch (error) {
+        alert('Invalid JSON format: ' + error.message);
+        e.preventDefault();
+    }
+});
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 </script>
 {% endblock %}

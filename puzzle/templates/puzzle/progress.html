@@ -1,0 +1,103 @@
+{% extends "puzzle/base.html" %}
+
+{% block title %}Quest Log{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card rpg-card">
+        <div class="card-header rpg-header">
+            <h1 class="text-rpg-title">
+                <i class="bi bi-scroll me-2"></i>Adventurer's Chronicle
+            </h1>
+        </div>
+
+        <div class="card-body">
+            {% if submissions %}
+            <div class="rpg-progress-list">
+                <div class="rpg-list-header">
+                    <div class="row fw-bold text-rpg-accent">
+                        <div class="col-md-5">Quest Name</div>
+                        <div class="col-md-3">Submission Date</div>
+                        <div class="col-md-2">Attempts</div>
+                        <div class="col-md-2">Status</div>
+                    </div>
+                </div>
+
+                {% for submission in submissions %}
+                <div class="rpg-progress-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-5">
+                            <i class="bi bi-question-square me-2 text-rpg-accent"></i>
+                            {{ submission.puzzle.title }}
+                        </div>
+
+                        <div class="col-md-3">
+                            <i class="bi bi-calendar-check me-2"></i>
+                            {{ submission.submission_date|date:"M j, Y" }}
+                        </div>
+
+                        <div class="col-md-2">
+                            <i class="bi bi-lightning-charge me-2"></i>
+                            {{ submission.attempt_count }}
+                        </div>
+
+                        <div class="col-md-2">
+                            {% if submission.status == 'pass' %}
+                            <span class="badge bg-rpg-success">
+                                <i class="bi bi-check-circle me-1"></i>Approved
+                            </span>
+                            {% elif submission.status == 'fail' %}
+                            <span class="badge bg-rpg-danger">
+                                <i class="bi bi-x-circle me-1"></i>Needs Revision
+                            </span>
+                            {% else %}
+                            <span class="badge bg-rpg-warning">
+                                <i class="bi bi-hourglass-split me-1"></i>Pending
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="rpg-stats mt-4 p-3">
+                <h3 class="text-rpg-accent mb-3">
+                    <i class="bi bi-trophy me-2"></i>Quest Summary
+                </h3>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="rpg-stat-item">
+                            <i class="bi bi-shield-check me-2"></i>
+                            Total Attempted: {{ submissions|length }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="rpg-stat-item">
+                            <i class="bi bi-stars me-2"></i>
+                            Quests Conquered: {{ total_solved }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="text-center py-4">
+                <div class="rpg-empty-state">
+                    <i class="bi bi-journal-x fs-1 text-rpg-muted mb-3"></i>
+                    <h4 class="text-rpg-muted">No Quests Recorded</h4>
+                    <p class="text-rpg-text">Embark on your first quest to begin your journey!</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="card-footer rpg-footer">
+            <small class="text-rpg-muted">
+                <i class="bi bi-info-circle me-1"></i>
+                Updated: {% now "SHORT_DATETIME_FORMAT" %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}

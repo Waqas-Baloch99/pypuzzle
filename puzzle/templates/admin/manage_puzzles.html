@@ -1,4 +1,5 @@
 {% extends "admin/base_admin.html" %}
+<<<<<<< HEAD
 {% load static %}
 
 {% block extrastyle %}
@@ -275,4 +276,186 @@
         border-color: var(--ai-neon);
     }
 </style>
+=======
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Puzzle Generation Card -->
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3 bg-primary text-white">
+            <h4 class="m-0 font-weight-bold">Forge New Quest</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{% url 'puzzle_admin:generate-puzzle' %}">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <!-- Prompt Section -->
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label class="form-label text-dark mb-2">
+                                <i class="bi bi-chat-left-text me-2"></i>Quest Blueprint
+                            </label>
+                            <textarea name="prompt" 
+                                    class="form-control quest-prompt" 
+                                    rows="6"
+                                    placeholder="Describe the challenge you want to create..."
+                                    required>{{ default_prompt }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Deadline & Controls -->
+                    <div class="col-md-4">
+                        <div class="form-group mb-4">
+                            <label class="form-label text-dark mb-2">
+                                <i class="bi bi-clock-history me-2"></i>Submission Deadline
+                            </label>
+                            <input type="datetime-local" 
+                                   name="deadline" 
+                                   class="form-control"
+                                   required
+                                   min="{{ min_deadline|date:'Y-m-d\TH:i' }}"
+                                   value="{{ default_deadline|date:'Y-m-d\TH:i' }}">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-magic me-2"></i>Forge Quest
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Quests Table -->
+    <div class="card shadow-lg">
+        <div class="card-header py-3 bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="m-0 font-weight-bold">Active Quests</h2>
+            <form method="get" class="d-flex w-25">
+                <input type="text" name="search" 
+                       class="form-control rounded-start" 
+                       placeholder="Search quests..." 
+                       value="{{ request.GET.search }}">
+                <button type="submit" class="btn btn-light rounded-end">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Quest Title</th>
+                            <th>Deadline</th>
+                            <th>Trials</th>
+                            <th>Status</th>
+                            <th class="pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for puzzle in puzzles %}
+                        <tr class="{% if puzzle.deadline_passed %}bg-expired{% endif %}">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-puzzle me-2"></i>
+                                    {{ puzzle.title }}
+                                </div>
+                            </td>
+                            
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="text-dark">{{ puzzle.deadline|date:"M d, Y H:i" }}</span>
+                                    <small class="text-{% if puzzle.deadline_passed %}danger{% else %}success{% endif %}">
+                                        {% if puzzle.deadline_passed %}Closed{% else %}Active{% endif %}
+                                    </small>
+                                </div>
+                            </td>
+                            
+                            <td>{{ puzzle.submission_count }}</td>
+                            
+                            <td>
+                                <span class="badge bg-{% if puzzle.test_status == 'pass' %}success{% else %}warning{% endif %}">
+                                    {{ puzzle.get_test_status_display }}
+                                </span>
+                            </td>
+                            
+                            <td class="pe-4">
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'puzzle_admin:edit-puzzle' puzzle.id %}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       data-bs-toggle="tooltip" 
+                                       title="Edit Quest">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    
+                                    <a href="{% url 'puzzle_admin:preview-puzzle' puzzle.id %}" 
+                                       class="btn btn-sm btn-outline-info"
+                                       data-bs-toggle="tooltip"
+                                       title="Preview Quest">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    
+                                    <form method="post" 
+                                          action="{% url 'puzzle_admin:delete-puzzle' puzzle.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="tooltip"
+                                                title="Delete Quest"
+                                                onclick="return confirm('Banish this quest forever?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 bg-light">
+                                <i class="bi bi-inbox text-muted display-6"></i>
+                                <p class="mt-3 text-muted">No active quests in the realm</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.quest-prompt {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border: 2px solid #dee2e6;
+    min-height: 150px;
+}
+
+.bg-expired {
+    background-color: rgba(220, 53, 69, 0.05) !important;
+}
+
+.table-hover tr:hover td {
+    background-color: #f8f9fa !important;
+}
+
+.th-dark {
+    background-color: #2c3e50;
+    color: white;
+}
+</style>
+
+<script>
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+})
+</script>
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 {% endblock %}

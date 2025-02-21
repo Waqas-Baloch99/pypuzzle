@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // admin.js
 document.addEventListener('DOMContentLoaded', () => {
     // Constants
@@ -124,3 +125,13 @@ styleSheet.textContent = `
     }
 `;
 document.head.appendChild(styleSheet);
+=======
+// Initialize Bootstrap components
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+})
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc

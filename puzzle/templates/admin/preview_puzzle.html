@@ -1,0 +1,64 @@
+{% extends "admin/base_admin.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">Preview: {{ puzzle.title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="mb-3">Problem Statement</h5>
+                    <div class="border p-3 mb-4">{{ puzzle.description|linebreaks }}</div>
+                    
+                    <h5 class="mb-3">Examples</h5>
+                    {% for example in examples %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Input:</strong>
+                                    <pre class="mb-0">{{ example.input }}</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Expected Output:</strong>
+                                    <pre class="mb-0">{{ example.output }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="col-md-4">
+                    <h5 class="mb-3">Details</h5>
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">
+                            <strong>Difficulty:</strong>
+                            {{ puzzle.get_difficulty_display }}
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Status:</strong>
+                            <span class="badge bg-{% if puzzle.test_status == 'pass' %}success{% else %}danger{% endif %}">
+                                {{ puzzle.test_status|upper }}
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Created:</strong>
+                            {{ puzzle.date|date:"M d, Y" }}
+                        </li>
+                    </ul>
+                    
+                    <h5 class="mb-3">Hints</h5>
+                    <div class="list-group">
+                        {% for hint in hints %}
+                        <div class="list-group-item">{{ hint }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

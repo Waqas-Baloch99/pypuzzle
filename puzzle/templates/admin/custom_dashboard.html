@@ -1,4 +1,5 @@
 {% extends "admin/base_admin.html" %}
+<<<<<<< HEAD
 {% load static %}
 
 {% block extrastyle %}
@@ -113,11 +114,61 @@
                     <div>
                         <p class="mb-0 text-uppercase small opacity-75 text-ai-secondary">Total Puzzles</p>
                         <h2 class="mb-0 text-success">{{ puzzles.count }}</h2>
+=======
+{% load i18n %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h1 class="h3 mb-0">Admin Dashboard</h1>
+    </div>
+    <div class="card-body">
+        <!-- Quick Actions -->
+        <div class="module mb-4">
+            <h2>Quick Actions</h2>
+            <div class="btn-group" role="group">
+                <a href="{% url 'puzzle_admin:manage-puzzles' %}" class="btn btn-primary">
+                    <i class="bi bi-puzzle"></i> Manage Puzzles
+                </a>
+                <a href="{% url 'puzzle_admin:manage-users' %}" class="btn btn-success">
+                    <i class="bi bi-people"></i> Manage Users
+                </a>
+                <a href="{% url 'puzzle_admin:generate-puzzle' %}" class="btn btn-info">
+                    <i class="bi bi-magic"></i> Generate Puzzle
+                </a>
+            </div>
+        </div>
+
+        <!-- Puzzle Statistics Cards -->
+        <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+            <div class="col">
+                <div class="card text-white bg-primary h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Users</h5>
+                        <p class="card-text display-4">{{ stats.total_users }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Puzzles</h5>
+                        <p class="card-text display-4">{{ stats.total_puzzles }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card text-white bg-info h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">Active Today</h5>
+                        <p class="card-text display-4">{{ stats.active_today }}</p>
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
                     </div>
                 </div>
             </div>
         </div>
 
+<<<<<<< HEAD
         <div class="col-12 col-md-6 col-xl-4">
             <div class="stat-card text-white p-4">
                 <div class="d-flex align-items-center">
@@ -172,6 +223,38 @@
                             <tr>
                                 <td colspan="5" class="text-center py-4 text-muted">
                                     No recent submissions found
+=======
+        <!-- Recent Users Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="h4 mb-0">Recent Users</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Joined Date</th>
+                                <th>Last Login</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in stats.recent_users %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email|default:"-" }}</td>
+                                <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+                                <td>{{ user.last_login|date:"Y-m-d H:i"|default:"Never" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-danger py-4">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>No users found!
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
                                 </td>
                             </tr>
                             {% endfor %}
@@ -180,6 +263,7 @@
                 </div>
             </div>
         </div>
+<<<<<<< HEAD
 
         <!-- Categories Overview -->
         <div class="col-12 col-xl-4">
@@ -227,4 +311,24 @@
         </div>
     </div>
 </div>
+=======
+    </div>
+</div>
+
+<style>
+    .card-title .bi {
+        margin-right: 0.5rem;
+    }
+    .btn-group .btn {
+        transition: all 0.3s ease;
+    }
+    .btn-group .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,0.03);
+    }
+</style>
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 {% endblock %}

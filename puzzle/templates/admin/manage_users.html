@@ -1,4 +1,5 @@
 {% extends "admin/base_admin.html" %}
+<<<<<<< HEAD
 {% load static %}
 
 {% block extrastyle %}
@@ -233,4 +234,147 @@
         border-color: var(--ai-neon);
     }
 </style>
+=======
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card shadow-lg mb-4">
+        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+            <h2 class="m-0 font-weight-bold text-primary">User Management</h2>
+            <a href="#" class="btn btn-success btn-icon-split">
+                <span class="icon text-white-50">
+                    <i class="bi bi-plus-circle"></i>
+                </span>
+                <span class="text">Add New User</span>
+            </a>
+        </div>
+        
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="userTable">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th></th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Joined</th>
+                            <th>Last Activity</th>
+                            <th>Solved</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr data-user-id="{{ user.id }}">
+                            <td class="details-control text-center">
+                                <i class="bi bi-chevron-right"></i>
+                            </td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.email|default:"-" }}</td>
+                            <td>{{ user.date_joined|date:"Y-m-d" }}</td>
+                            <td>
+                                {% with last_progress=user.progress.last %}
+                                    {{ last_progress.solved_date|date:"Y-m-d H:i"|default:"No activity" }}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">
+                                    {{ user.progress.count }} / {{ total_puzzles }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">Active</span>
+                                {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-sm btn-primary" title="Edit">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="detail-row" id="details-{{ user.id }}" style="display: none;">
+                            <td colspan="8">
+                                <div class="p-3 bg-light">
+                                    <h5 class="mb-3">Puzzle Progress</h5>
+                                    <div class="row">
+                                        {% for progress in user.progress.all %}
+                                        <div class="col-md-4 mb-3">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ progress.puzzle.title }}</h6>
+                                                    <p class="card-text">
+                                                        <span class="badge bg-{% if progress.solved %}success{% else %}warning{% endif %}">
+                                                            {% if progress.solved %}Solved{% else %}In Progress{% endif %}
+                                                        </span><br>
+                                                        Attempts: {{ progress.attempts }}<br>
+                                                        {% if progress.solved %}
+                                                        Solved on: {{ progress.solved_date|date:"Y-m-d" }}
+                                                        {% endif %}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% empty %}
+                                        <div class="col-12 text-center text-muted">
+                                            No puzzle attempts yet
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-people-slash display-6"></i>
+                                <p class="mt-2">No users found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.detail-row td {
+    border-top: 0;
+    padding: 0;
+}
+.details-control {
+    cursor: pointer;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.details-control').forEach(control => {
+        control.addEventListener('click', function() {
+            const userId = this.closest('tr').dataset.userId;
+            const detailRow = document.querySelector(`#details-${userId}`);
+            const icon = this.querySelector('i');
+            
+            if (detailRow.style.display === 'none') {
+                detailRow.style.display = 'table-row';
+                icon.classList.replace('bi-chevron-right', 'bi-chevron-down');
+            } else {
+                detailRow.style.display = 'none';
+                icon.classList.replace('bi-chevron-down', 'bi-chevron-right');
+            }
+        });
+    });
+});
+</script>
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 {% endblock %}

@@ -11,6 +11,10 @@ import os
 
 from django.core.asgi import get_asgi_application
 
+<<<<<<< HEAD
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "python_puzzle.settings")
+=======
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'python_puzzle.settings')
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 
 application = get_asgi_application()

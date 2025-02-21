@@ -1,0 +1,169 @@
+/* static/css/user.css */
+/* RPG Theme Styles */
+:root {
+    /* Color Variables */
+    --rpg-dark: #1a1a1a;
+    --rpg-darker: #0a0a0a;
+    --rpg-accent: #daa520;
+    --rpg-text: #e0e0e0;
+    --rpg-success: #28a745;
+    --rpg-danger: #dc3545;
+    --rpg-warning: #ffc107;
+    --rpg-info: #17a2b8;
+    --rpg-code: #8abeb7;
+    --rpg-border: #3e3e3e;
+}
+
+/* Base Elements */
+body {
+    background-color: var(--rpg-darker);
+    color: var(--rpg-text);
+    font-family: 'Cinzel', serif;
+}
+
+/* Card Styles */
+.rpg-card {
+    background: var(--rpg-dark);
+    border: 2px solid var(--rpg-accent);
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(218, 165, 32, 0.2);
+}
+
+.rpg-header {
+    background: linear-gradient(45deg, #2d2d2d, #1a1a1a);
+    border-bottom: 2px solid var(--rpg-accent);
+}
+
+.rpg-footer {
+    background: linear-gradient(45deg, #1a1a1a, #2d2d2d);
+    border-top: 2px solid var(--rpg-accent);
+}
+
+/* Text Styles */
+.text-rpg {
+    color: var(--rpg-text);
+}
+
+.text-rpg-accent {
+    color: var(--rpg-accent);
+}
+
+.text-rpg-code {
+    color: var(--rpg-code);
+}
+
+/* Code and Preformatted Text */
+.rpg-pre {
+    background-color: var(--rpg-darker);
+    border: 1px solid var(--rpg-border);
+    color: var(--rpg-code);
+    padding: 1rem;
+    border-radius: 5px;
+    white-space: pre-wrap;
+}
+
+/* Lists */
+.rpg-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.rpg-list-item {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0;
+    background-color: rgba(40, 40, 40, 0.5);
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.rpg-list-item:hover {
+    background-color: rgba(218, 165, 32, 0.1);
+    transform: translateX(5px);
+}
+
+/* Tags */
+.rpg-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    margin: 0.25rem;
+    background-color: rgba(218, 165, 32, 0.1);
+    border: 1px solid var(--rpg-accent);
+    border-radius: 15px;
+    font-size: 0.9rem;
+}
+
+/* Forms */
+.rpg-textarea {
+    background-color: var(--rpg-darker);
+    border: 1px solid var(--rpg-border);
+    color: var(--rpg-text);
+    font-family: monospace;
+}
+
+.rpg-textarea:focus {
+    background-color: var(--rpg-dark);
+    border-color: var(--rpg-accent);
+    box-shadow: 0 0 10px rgba(218, 165, 32, 0.3);
+}
+
+/* Buttons */
+.btn-rpg {
+    background: linear-gradient(45deg, #2d2d2d, var(--rpg-accent));
+    color: white;
+    border: 1px solid var(--rpg-accent);
+    transition: all 0.3s ease;
+}
+
+.btn-rpg:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px rgba(218, 165, 32, 0.4);
+}
+
+/* Test Results */
+.test-case {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--rpg-dark);
+    border-left: 4px solid transparent;
+    border-radius: 4px;
+}
+
+.bg-rpg-success {
+    border-color: var(--rpg-success);
+}
+
+.bg-rpg-danger {
+    border-color: var(--rpg-danger);
+}
+
+/* Alerts */
+.rpg-alert {
+    background-color: var(--rpg-dark);
+    border: 1px solid var(--rpg-accent);
+    color: var(--rpg-text);
+}
+
+/* Prophecy Cards */
+.prophecy-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--rpg-dark);
+    border-radius: 5px;
+    margin-bottom: 1rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .prophecy-card {
+        grid-template-columns: 1fr;
+    }
+    
+    .rpg-card {
+        margin: 0 -15px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 :root {
     --ai-black: #1a1a1a;
     --ai-dark: #2d2d2d;
@@ -101,4 +102,31 @@
 .nav-link.active {
     color: var(--ai-primary) !important;
     border-bottom: 2px solid var(--ai-primary);
+=======
+/* Custom admin styles */
+body {
+    min-height: 100vh;
+    padding-top: 56px;
+}
+
+.navbar-brand {
+    font-weight: 600;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+}
+/* Basic styling for error prevention */
+.card-shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8f9fc;
+}
+
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+>>>>>>> 7c16dbc223490bb5bdec7f666aacb5bf12425ebc
 }
