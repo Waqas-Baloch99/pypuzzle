@@ -1,0 +1,331 @@
+{% extends 'puzzle/base.html' %}
+
+{% block title %}Python Puzzles{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* Improved container spacing */
+    .puzzle-container {
+        padding: 1.5rem 0;
+    }
+    
+    /* Enhanced filter styling */
+    .filter-section {
+        background-color: rgba(26, 26, 26, 0.5);
+        border-radius: 8px;
+        padding: 1.25rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(218, 165, 32, 0.2);
+    }
+    
+    .filter-title {
+        color: var(--rpg-gold);
+        margin-bottom: 1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .filter-title i {
+        margin-right: 0.5rem;
+    }
+    
+    .category-filter .btn, .level-filter .btn {
+        transition: all 0.3s ease;
+        margin: 0.25rem;
+        border-radius: 0.25rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    .category-filter .btn-outline-secondary, .level-filter .btn-outline-secondary {
+        border-color: var(--rpg-gold);
+        color: var(--rpg-light);
+    }
+    
+    .category-filter .btn-outline-primary, .level-filter .btn-outline-primary {
+        border-color: var(--rpg-gold);
+        color: var(--rpg-gold);
+    }
+    
+    .category-filter .btn-outline-warning, .level-filter .btn-outline-warning {
+        border-color: #ffca28;
+        color: #ffca28;
+    }
+    
+    .category-filter .btn-outline-danger, .level-filter .btn-outline-danger {
+        border-color: var(--rpg-red);
+        color: var(--rpg-red);
+    }
+    
+    .category-filter .btn.active, .level-filter .btn.active {
+        background-color: var(--rpg-gold);
+        color: #000 !important;
+        font-weight: bold;
+        box-shadow: 0 0 10px rgba(218, 165, 32, 0.5);
+    }
+    
+    .category-filter .btn:hover, .level-filter .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Improved card styling */
+    .puzzle-card {
+        background-color: var(--rpg-slate);
+        border: 1px solid rgba(218, 165, 32, 0.2);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .puzzle-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(218, 165, 32, 0.3);
+    }
+    
+    .card-body {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .card-title {
+        color: var(--rpg-gold);
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .card-description {
+        color: var(--rpg-light);
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        flex-grow: 1;
+    }
+    
+    .badge-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        align-items: center;
+    }
+    
+    .badge {
+        padding: 0.5rem 0.75rem;
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+    
+    .badge-type-mcq {
+        background-color: #2e7d32; /* Green for MCQ */
+    }
+    
+    .badge-type-code {
+        background-color: #ffca28; /* Yellow for Coding */
+        color: #000;
+    }
+    
+    .card-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(218, 165, 32, 0.1);
+    }
+    
+    .card-footer {
+        background-color: rgba(26, 26, 26, 0.7);
+        border-top: 1px solid rgba(218, 165, 32, 0.2);
+        padding: 1rem;
+    }
+    
+    .card-footer .btn-primary {
+        background-color: var(--rpg-gold);
+        border-color: var(--rpg-gold);
+        color: #000;
+        font-weight: 600;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .card-footer .btn-primary:hover {
+        background-color: #ffca28;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .solved-indicator {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: #2e7d32;
+        font-size: 1.25rem;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 10px rgba(46, 125, 50, 0.5);
+    }
+    
+    /* Empty state styling */
+    .empty-state {
+        background-color: rgba(26, 26, 26, 0.5);
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        border: 1px solid rgba(218, 165, 32, 0.2);
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--rpg-gold);
+        margin-bottom: 1rem;
+        display: block;
+    }
+    
+    .page-title {
+        color: var(--rpg-gold);
+        font-size: 2rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+    }
+    
+    .page-title i {
+        margin-right: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="puzzle-container">
+    <h1 class="page-title mb-4">
+        <i class="bi bi-puzzle-fill"></i> Python Coding Challenges
+    </h1>
+    
+    <!-- Filters Section -->
+    <div class="filter-section">
+        <!-- Category Filter -->
+        <h5 class="filter-title">
+            <i class="bi bi-tags-fill"></i> Categories
+        </h5>
+        <div class="category-filter">
+            <div class="d-flex flex-wrap" role="group" aria-label="Category filter">
+                <a href="?category=all" 
+                   class="btn btn-outline-secondary {% if current_category == 'all' %}active{% endif %}">
+                    <i class="bi bi-grid-3x3-gap-fill me-1"></i> All Categories
+                </a>
+                {% for cat_key, cat_name in categories %}
+                    <a href="?category={{ cat_key }}" 
+                       class="btn btn-outline-primary {% if current_category == cat_key %}active{% endif %}">
+                        {{ cat_name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Level Filter (shown only if category is selected) -->
+        {% if current_category != 'all' %}
+        <h5 class="filter-title mt-4">
+            <i class="bi bi-bar-chart-fill"></i> Difficulty Levels
+        </h5>
+        <div class="level-filter">
+            <div class="d-flex flex-wrap" role="group" aria-label="Difficulty filter">
+                <a href="?category={{ current_category }}&level=all" 
+                   class="btn btn-outline-secondary {% if current_level == 'all' %}active{% endif %}">
+                    <i class="bi bi-layers-fill me-1"></i> All Levels
+                </a>
+                {% for level_key, level_name in level_choices %}
+                    <a href="?category={{ current_category }}&level={{ level_key }}" 
+                       class="btn btn-outline-{% cycle 'primary' 'warning' 'danger' %} {% if current_level == level_key %}active{% endif %}">
+                        {{ level_name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Puzzle Cards -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for puzzle in puzzles %}
+            <div class="col">
+                <div class="puzzle-card shadow position-relative">
+                    {% if user.is_authenticated and puzzle in user.userprofile.solved_puzzles.all %}
+                        <span class="solved-indicator" title="Solved">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </span>
+                    {% endif %}
+                    <div class="card-body p-4">
+                        <h5 class="card-title">{{ puzzle.title }}</h5>
+                        <div class="card-description">
+                            {{ puzzle.description|truncatechars:100 }}
+                            {% if puzzle.description|length > 100 %}
+                                <a href="{% url 'puzzle:detail' puzzle.id %}" class="text-warning small ms-1">Read More</a>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="badge-container">
+                            <span class="badge bg-{% if puzzle.level == 'beginner' %}success{% elif puzzle.level == 'intermediate' %}warning text-dark{% else %}danger{% endif %}">
+                                <i class="bi bi-{% if puzzle.level == 'beginner' %}stars{% elif puzzle.level == 'intermediate' %}star-half{% else %}star-fill{% endif %} me-1"></i>
+                                {{ puzzle.level_display }}
+                            </span>
+                            <span class="badge bg-primary">
+                                <i class="bi bi-tag-fill me-1"></i>
+                                {{ puzzle.category_display }}
+                            </span>
+                            <span class="badge badge-type-{% if puzzle.puzzle_type == 'mcq' %}mcq{% else %}code{% endif %}">
+                                <i class="bi bi-{% if puzzle.puzzle_type == 'mcq' %}list-check{% else %}code-square{% endif %} me-1"></i>
+                                {{ puzzle.type_display }}
+                            </span>
+                        </div>
+                        
+                        <div class="card-meta">
+                            <span class="text-warning">
+                                <i class="bi bi-star-fill me-1"></i> {{ puzzle.points }} pts
+                            </span>
+                            <span class="text-muted small">
+                                <i class="bi bi-clock-history me-1"></i> {{ puzzle.created_at|timesince }} ago
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{% url 'puzzle:detail' puzzle.id %}" class="btn btn-primary w-100">
+                            <i class="bi bi-eye me-1"></i> View Challenge
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="empty-state">
+                    <i class="bi bi-search"></i>
+                    <h4 class="text-warning">No Puzzles Found</h4>
+                    <p class="text-light">
+                        {% if not current_category %}
+                            Please select a category to view puzzles
+                        {% else %}
+                            No puzzles found matching these filters. Try changing your selection.
+                        {% endif %}
+                    </p>
+                    <a href="{% url 'puzzle:index' %}" class="btn btn-outline-warning mt-3">
+                        <i class="bi bi-arrow-left me-1"></i> Reset Filters
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

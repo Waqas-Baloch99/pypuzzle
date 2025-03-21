@@ -1,0 +1,606 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}PyPuzzle{% endblock %}</title>
+    
+    <!-- Dark Theme Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-dark-5@1.1.3/dist/css/bootstrap-nightshade.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=MedievalSharp&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <style>
+        :root {
+            --rpg-gold: #daa520;
+            --rpg-gold-light: #f0c14b;
+            --rpg-gold-dark: #b7881b;
+            --rpg-red: #8b0000;
+            --rpg-slate: #1a1a1a;
+            --rpg-slate-dark: #0f0f0f;
+            --rpg-slate-light: #2a2a2a;
+            --rpg-light: #e0e0e0;
+            --rpg-accent: #4a3f35;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: var(--rpg-light);
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Enhanced Navbar Styling */
+        .navbar {
+            background-color: rgba(26, 26, 26, 0.95);
+            border-bottom: 1px solid rgba(218, 165, 32, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            padding: 0.75rem 0;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 2.2rem;
+            color: var(--rpg-gold) !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7), 0 0 10px rgba(218, 165, 32, 0.5);
+            transition: all 0.3s ease;
+            padding: 0.25rem 0;
+            letter-spacing: 1px;
+        }
+
+        .navbar-brand:hover {
+            color: var(--rpg-gold-light) !important;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7), 0 0 15px rgba(218, 165, 32, 0.7);
+            transform: scale(1.05);
+        }
+
+        .nav-item {
+            margin: 0 0.25rem;
+        }
+
+        .nav-link {
+            color: var(--rpg-light) !important;
+            transition: all 0.3s ease;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nav-link:hover {
+            color: var(--rpg-gold) !important;
+            transform: translateY(-2px);
+            background-color: rgba(218, 165, 32, 0.1);
+        }
+
+        .nav-link.active {
+            color: var(--rpg-gold) !important;
+            font-weight: 600;
+            background-color: rgba(218, 165, 32, 0.15);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background-color: var(--rpg-gold);
+            border-radius: 2px;
+        }
+
+        .navbar-toggler {
+            border-color: var(--rpg-gold);
+            padding: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-toggler:hover {
+            background-color: rgba(218, 165, 32, 0.1);
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 3px rgba(218, 165, 32, 0.3);
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(218, 165, 32, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* User Menu Styling */
+        .user-menu {
+            background-color: var(--rpg-slate-dark);
+            border: 1px solid var(--rpg-gold);
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+
+        .user-menu-header {
+            background-color: rgba(218, 165, 32, 0.15);
+            padding: 1rem;
+            border-bottom: 1px solid rgba(218, 165, 32, 0.3);
+        }
+
+        .user-menu-item {
+            padding: 0.75rem 1rem;
+            transition: all 0.2s ease;
+            color: var(--rpg-light);
+            display: flex;
+            align-items: center;
+        }
+
+        .user-menu-item:hover {
+            background-color: rgba(218, 165, 32, 0.1);
+            color: var(--rpg-gold);
+        }
+
+        .user-menu-item i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+            color: var(--rpg-gold);
+        }
+
+        /* Enhanced Alert Styling */
+        .alert {
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-success {
+            border-color: #2e7d32;
+            background-color: rgba(46, 125, 50, 0.15);
+        }
+
+        .alert-warning {
+            border-color: var(--rpg-gold);
+            background-color: rgba(218, 165, 32, 0.15);
+        }
+
+        .alert-danger {
+            border-color: var(--rpg-red);
+            background-color: rgba(139, 0, 0, 0.15);
+        }
+
+        /* Enhanced Footer Styling */
+        footer {
+            background-color: rgba(26, 26, 26, 0.95);
+            border-top: 1px solid rgba(218, 165, 32, 0.3);
+            color: var(--rpg-light);
+            padding: 2rem 0 1.5rem;
+            margin-top: auto;
+            box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .footer-brand {
+            font-family: 'MedievalSharp', cursive;
+            font-size: 1.8rem;
+            color: var(--rpg-gold);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .footer-section {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .footer-heading {
+            color: var(--rpg-gold);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-heading i {
+            margin-right: 0.5rem;
+        }
+
+        .footer-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-link {
+            color: var(--rpg-light);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-link:hover {
+            color: var(--rpg-gold);
+            transform: translateX(5px);
+        }
+
+        .footer-link i {
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--rpg-gold);
+        }
+
+        .community-link {
+            display: inline-flex;
+            align-items: center;
+            background-color: rgba(218, 165, 32, 0.15);
+            color: var(--rpg-gold);
+            padding: 0.75rem 1.25rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+            border: 1px solid rgba(218, 165, 32, 0.3);
+        }
+
+        .community-link:hover {
+            background-color: var(--rpg-gold);
+            color: #000;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .community-link i {
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 1.5rem;
+            margin-top: 1.5rem;
+            border-top: 1px solid rgba(218, 165, 32, 0.2);
+            font-size: 0.9rem;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(218, 165, 32, 0.15);
+            color: var(--rpg-gold);
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .social-link:hover {
+            background-color: var(--rpg-gold);
+            color: #000;
+            transform: translateY(-3px);
+        }
+
+        /* Theme Toggle Button */
+        #themeToggle {
+            background-color: transparent;
+            border: none;
+            color: var(--rpg-light);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        #themeToggle:hover {
+            background-color: rgba(218, 165, 32, 0.15);
+            color: var(--rpg-gold);
+            transform: rotate(30deg);
+        }
+
+        /* Main Content Area */
+        main {
+            flex-grow: 1;
+            padding: 2rem 0;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 992px) {
+            .navbar-collapse {
+                background-color: var(--rpg-slate-dark);
+                border-radius: 8px;
+                padding: 1rem;
+                margin-top: 1rem;
+                border: 1px solid rgba(218, 165, 32, 0.2);
+            }
+            
+            .nav-item {
+                margin: 0.25rem 0;
+            }
+            
+            .footer-content {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            
+            .footer-section {
+                min-width: 100%;
+            }
+        }
+
+        /* Light Theme Overrides */
+        :root {
+            --bs-body-bg: #f8f9fa;
+            --bs-body-color: #212529;
+        }
+
+        html:not(.dark) {
+            --rpg-light: #212529;
+            --rpg-slate: #f8f9fa;
+            --rpg-slate-dark: #e9ecef;
+            --rpg-slate-light: #dee2e6;
+        }
+
+        html:not(.dark) body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #212529;
+        }
+
+        html:not(.dark) .navbar,
+        html:not(.dark) footer {
+            background-color: rgba(248, 249, 250, 0.95);
+            border-color: rgba(218, 165, 32, 0.3);
+        }
+
+        html:not(.dark) .nav-link,
+        html:not(.dark) #themeToggle {
+            color: #212529 !important;
+        }
+
+        html:not(.dark) .footer-link {
+            color: #212529;
+        }
+
+        html:not(.dark) .user-menu {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+    </style>
+    {% block extrastyle %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!-- Enhanced Navigation -->
+    <nav class="navbar navbar-expand-lg shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'puzzle:index' %}">
+                <span>PyPuzzle</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" 
+                    aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
+                           href="{% url 'puzzle:index' %}">
+                            <i class="bi bi-house-door me-1"></i> Home
+                        </a>
+                    </li>
+                    
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle me-1"></i> {{ user.username }}
+                            </a>
+                            <ul class="dropdown-menu user-menu" aria-labelledby="userDropdown">
+                                <li class="user-menu-header">
+                                    <div class="fw-bold text-warning">{{ user.username }}</div>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </li>
+                                <li><a class="dropdown-item user-menu-item" href="{% url 'puzzle:profile' %}">
+                                    <i class="bi bi-person-badge"></i> My Profile
+                                </a></li>
+                                <li><a class="dropdown-item user-menu-item" href="{% url 'puzzle:leaderboard' %}">
+                                    <i class="bi bi-trophy"></i> Leaderboard
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" action="{% url 'puzzle:logout' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item user-menu-item">
+                                            <i class="bi bi-door-closed"></i> Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" 
+                               href="{% url 'puzzle:login' %}">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'signup' %}active{% endif %}" 
+                               href="{% url 'puzzle:signup' %}">
+                                <i class="bi bi-person-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="nav-item ms-2">
+                        <a href="https://www.skool.com/coder" target="_blank" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-people-fill me-1"></i> Join Community
+                        </a>
+                    </li>
+                    
+                    <!-- Theme Toggle Button -->
+                    <li class="nav-item ms-2">
+                        <button class="btn nav-link" id="themeToggle" title="Toggle Theme">
+                            <i class="bi bi-moon-stars-fill"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow-1">
+        <div class="container">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Enhanced Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <a href="{% url 'puzzle:index' %}" class="footer-brand">PyPuzzle</a>
+                    <p class="mb-3">Master Python through interactive challenges and puzzles. Improve your coding skills while having fun!</p>
+                    <a href="https://www.skool.com/coder" target="_blank" class="community-link">
+                        <i class="bi bi-people-fill"></i> Join Our Free Python Community
+                    </a>
+                </div>
+                
+                <div class="footer-section">
+                    <h5 class="footer-heading"><i class="bi bi-compass"></i> Navigation</h5>
+                    <ul class="footer-links">
+                        <li><a href="{% url 'puzzle:index' %}" class="footer-link"><i class="bi bi-house-door"></i> Home</a></li>
+                        <li><a href="{% url 'puzzle:leaderboard' %}" class="footer-link"><i class="bi bi-trophy"></i> Leaderboard</a></li>
+                        {% if user.is_authenticated %}
+                            <li><a href="{% url 'puzzle:profile' %}" class="footer-link"><i class="bi bi-person-circle"></i> My Profile</a></li>
+                        {% else %}
+                            <li><a href="{% url 'puzzle:login' %}" class="footer-link"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
+                            <li><a href="{% url 'puzzle:signup' %}" class="footer-link"><i class="bi bi-person-plus"></i> Register</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h5 class="footer-heading"><i class="bi bi-link-45deg"></i> Connect With Us</h5>
+                    <p>Follow us on social media for updates, tips, and more Python content!</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link" title="GitHub"><i class="bi bi-github"></i></a>
+                        <a href="#" class="social-link" title="Twitter"><i class="bi bi-twitter-x"></i></a>
+                        <a href="#" class="social-link" title="Discord"><i class="bi bi-discord"></i></a>
+                        <a href="https://www.skool.com/coder" class="social-link" title="Python Community"><i class="bi bi-people"></i></a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="mb-0">
+                    <i class="bi bi-code-square me-1"></i>
+                    © {% now "Y" %} <a href="{% url 'puzzle:index' %}" class="text-warning text-decoration-none">PyPuzzle</a> - Master Python Challenges
+                    | Crafted with <i class="bi bi-heart-fill text-danger"></i> by Puzzle Enthusiasts
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Theme Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('themeToggle');
+            const icon = themeToggle.querySelector('i');
+            const html = document.documentElement;
+            
+            // Check for saved theme preference or use default
+            const currentTheme = localStorage.getItem('theme') || 'dark';
+            
+            // Apply theme
+            if (currentTheme === 'light') {
+                html.classList.remove('dark');
+                document.body.setAttribute('data-bs-theme', 'light');
+            } else {
+                html.classList.add('dark');
+                document.body.setAttribute('data-bs-theme', 'dark');
+            }
+            
+            // Update icon based on current theme
+            updateIcon();
+            
+            // Toggle theme on click
+            themeToggle.addEventListener('click', function() {
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    document.body.setAttribute('data-bs-theme', 'light');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    html.classList.add('dark');
+                    document.body.setAttribute('data-bs-theme', 'dark');
+                    localStorage.setItem('theme', 'dark');
+                }
+                updateIcon();
+            });
+            
+            function updateIcon() {
+                if (html.classList.contains('dark')) {
+                    icon.classList.remove('bi-sun-fill');
+                    icon.classList.add('bi-moon-stars-fill');
+                } else {
+                    icon.classList.remove('bi-moon-stars-fill');
+                    icon.classList.add('bi-sun-fill');
+                }
+            }
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
+
