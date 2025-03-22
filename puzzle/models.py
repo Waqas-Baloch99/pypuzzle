@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+
 class Puzzle(models.Model):
     CATEGORIES = [
         ('PY', 'Python'),
@@ -126,3 +127,15 @@ def save_user_profile(sender, instance, **kwargs):
         instance.userprofile.save()
     except UserProfile.DoesNotExist:
         UserProfile.objects.create(user=instance)
+
+class ChatMessage(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    response = models.TextField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.user.username}: {self.message[:50]}"
