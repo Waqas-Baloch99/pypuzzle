@@ -4,13 +4,14 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
-from .models import Puzzle, Submission, UserProfile
+from .models import Puzzle, Submission, UserProfile, ChatMessage
 from .forms import PuzzleSubmissionForm, SignUpForm, EmailAuthenticationForm
 import google.generativeai as genai
 from decouple import config
 import json
 import logging
 import re
+from django.http import JsonResponse
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -233,3 +234,84 @@ def logout_view(request):
         logout(request)
         messages.info(request, "You have been logged out successfully.")
     return redirect('puzzle:index')
+@login_required
+def ai_assistant(request):
+    """
+    Handle AI Assistant page rendering and chat interactions.
+    Groups chat history by date for better organization.
+    """
+    from django.db.models.functions import TruncDate
+    from django.utils import timezone
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            user_message = request.POST.get('message', '').strip()
+            if not user_message:
+                return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+            
+            # Current timestamp
+            current_time = timezone.now()
+            
+            # Save user message with the AI response in a single entry
+            chat_message = ChatMessage.objects.create(
+                user=request.user,
+                message=user_message,
+                timestamp=current_time
+            )
+            
+            # Generate AI response
+            prompt = f"""You are a helpful Python programming assistant.
+            Please help with the following question: {user_message}"""
+            
+            try:
+                response = gemini_pro.generate_content(prompt)
+                ai_response_text = response.text
+            except Exception as e:
+                logger.error(f"Error generating AI response: {str(e)}")
+                ai_response_text = "Sorry, I couldn't generate a response at this time. Please try again later."
+            
+            # Update the message with the response
+            chat_message.response = ai_response_text
+            chat_message.save()
+            
+            # Format date for consistency
+            message_date = current_time.strftime('%Y-%m-%d')
+            
+            return JsonResponse({
+                'response': ai_response_text,
+                'user_message_id': chat_message.id,
+                'user_timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'ai_timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'message_date': message_date
+            })
+            
+        except Exception as e:
+            logger.error(f"AI Assistant error: {str(e)}")
+            return JsonResponse({'error': 'Failed to process your request'}, status=500)
+    
+    # For GET request: Fetch and organize chat history by date
+    all_messages = ChatMessage.objects.filter(user=request.user).annotate(
+        date_str=TruncDate('timestamp')
+    ).order_by('-date_str', 'timestamp')
+    
+    # Group messages by date
+    date_grouped_history = {}
+    for message in all_messages:
+        date_key = message.date_str.strftime('%Y-%m-%d')
+        if date_key not in date_grouped_history:
+            date_grouped_history[date_key] = []
+        date_grouped_history[date_key].append(message)
+    
+    # Sort dates in reverse chronological order (newest first)
+    sorted_dates = sorted(date_grouped_history.keys(), reverse=True)
+    
+    # Reorganize the dictionary to maintain order
+    sorted_history = {date: date_grouped_history[date] for date in sorted_dates}
+    
+    return render(request, 'puzzle/ai_assistant.html', {
+        'chat_history': all_messages,
+        'date_grouped_history': sorted_history
+    })
