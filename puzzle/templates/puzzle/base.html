@@ -419,14 +419,13 @@
             
             <div class="collapse navbar-collapse" id="mainNav">
                 <ul class="navbar-nav ms-auto align-items-center">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
-                           href="{% url 'puzzle:index' %}">
-                            <i class="bi bi-house-door me-1"></i> Home
-                        </a>
-                    </li>
-                    
                     {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" 
+                               href="{% url 'puzzle:index' %}">
+                                <i class="bi bi-house-door me-1"></i> Home
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
                                data-bs-toggle="dropdown" aria-expanded="false">
@@ -454,6 +453,12 @@
                                 </li>
                             </ul>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}" 
+                               href="{% url 'puzzle:ai_assistant' %}">
+                                <i class="bi bi-robot me-1"></i> AI Assistant
+                            </a>
+                        </li>
                     {% else %}
                         <li class="nav-item">
                             <a class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}" 
@@ -468,13 +473,6 @@
                             </a>
                         </li>
                     {% endif %}
-                    
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'ai_assistant' %}active{% endif %}" 
-                           href="{% url 'puzzle:ai_assistant' %}">
-                            <i class="bi bi-robot me-1"></i> AI Assistant
-                        </a>
-                    </li>
                     
                     <li class="nav-item ms-2">
                         <a href="https://www.skool.com/coder" target="_blank" class="btn btn-outline-warning btn-sm">
