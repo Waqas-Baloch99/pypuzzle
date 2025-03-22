@@ -513,9 +513,10 @@
                     <h5 class="footer-heading"><i class="bi bi-compass"></i> Navigation</h5>
                     <ul class="footer-links">
                         <li><a href="{% url 'puzzle:index' %}" class="footer-link"><i class="bi bi-house-door"></i> Home</a></li>
-                        <li><a href="{% url 'puzzle:leaderboard' %}" class="footer-link"><i class="bi bi-trophy"></i> Leaderboard</a></li>
                         {% if user.is_authenticated %}
+                            <li><a href="{% url 'puzzle:leaderboard' %}" class="footer-link"><i class="bi bi-trophy"></i> Leaderboard</a></li>
                             <li><a href="{% url 'puzzle:profile' %}" class="footer-link"><i class="bi bi-person-circle"></i> Profile</a></li>
+                            <li><a href="{% url 'puzzle:ai_assistant' %}" class="footer-link"><i class="bi bi-robot"></i> AI Assistant</a></li>
                         {% else %}
                             <li><a href="{% url 'puzzle:login' %}" class="footer-link"><i class="bi bi-box-arrow-in-right"></i> Login</a></li>
                             <li><a href="{% url 'puzzle:signup' %}" class="footer-link"><i class="bi bi-person-plus"></i> Register</a></li>
