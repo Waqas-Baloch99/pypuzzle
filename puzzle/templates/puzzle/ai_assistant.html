@@ -1,0 +1,267 @@
+{% extends 'puzzle/base.html' %}
+{% load static %}
+
+{% block title %}AI Assistant - PyPuzzle{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .ai-container {
+        padding: 2rem 0;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    h3, .history-title {
+        font-family: 'MedievalSharp', cursive;
+        color: var(--rpg-gold);
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .chat-wrapper {
+        display: flex;
+        gap: 1rem;
+        height: 70vh;
+    }
+
+    .history-panel {
+        width: 30%;
+        background-color: var(--rpg-slate-dark);
+        border: 1px solid rgba(218, 165, 32, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+        overflow-y: auto;
+    }
+
+    .history-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .history-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background-color: rgba(218, 165, 32, 0.1);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        color: var(--rpg-light);
+    }
+
+    .history-item:hover {
+        background-color: rgba(218, 165, 32, 0.2);
+        transform: translateX(5px);
+    }
+
+    .history-item.active {
+        background-color: var(--rpg-gold);
+        color: #000;
+    }
+
+    .chat-panel {
+        width: 70%;
+        background-color: var(--rpg-slate);
+        border: 1px solid rgba(218, 165, 32, 0.2);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-header {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(218, 165, 32, 0.2);
+    }
+
+    .chat-messages {
+        flex-grow: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        background-color: var(--rpg-slate-light);
+    }
+
+    .message {
+        margin-bottom: 1rem;
+        padding: 0.75rem;
+        border-radius: 4px;
+    }
+
+    .user-message {
+        background-color: rgba(218, 165, 32, 0.15);
+        text-align: left;
+    }
+
+    .ai-message {
+        background-color: rgba(0, 0, 0, 0.2);
+        text-align: left;
+    }
+
+    .message strong {
+        color: var(--rpg-gold);
+    }
+
+    .timestamp {
+        font-size: 0.8rem;
+        color: var(--rpg-light);
+        opacity: 0.7;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .chat-form {
+        padding: 1rem;
+        border-top: 1px solid rgba(218, 165, 32, 0.2);
+    }
+
+    .chat-form textarea {
+        resize: vertical;
+        background-color: var(--rpg-slate-dark);
+        border-color: rgba(218, 165, 32, 0.3);
+        color: var(--rpg-light);
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .chat-form button {
+        background-color: var(--rpg-gold);
+        border-color: var(--rpg-gold);
+        color: #000;
+        transition: all 0.3s ease;
+        font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .chat-form button:hover {
+        background-color: var(--rpg-gold-light);
+    }
+
+    @media (max-width: 768px) {
+        .chat-wrapper {
+            flex-direction: column;
+            height: auto;
+        }
+        .history-panel, .chat-panel {
+            width: 100%;
+        }
+        .history-panel {
+            max-height: 30vh;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ai-container container">
+    <div class="chat-wrapper">
+        <!-- History Panel -->
+        <div class="history-panel">
+            <h3 class="history-title">Chat History</h3>
+            <div id="chat-history">
+                {% for message in chat_history %}
+                    {% if not message.response %}
+                        <div class="history-item" data-message-id="{{ message.id }}">
+                            {{ message.message|truncatechars:50 }}
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <p class="text-muted">No chat history yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h3>AI Programming Assistant</h3>
+            </div>
+            <div id="chat-messages" class="chat-messages">
+                {% for message in chat_history %}
+                    <div class="message user-message">
+                        <span class="timestamp">{{ message.timestamp|date:"Y-m-d H:i:s" }}</span>
+                        <strong>You:</strong> {{ message.message }}
+                    </div>
+                    {% if message.response %}
+                        <div class="message ai-message">
+                            <span class="timestamp">{{ message.timestamp|date:"Y-m-d H:i:s" }}</span>
+                            <strong>Assistant:</strong> {{ message.response }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <form id="chat-form" class="chat-form">
+                {% csrf_token %}
+                <div class="input-group">
+                    <textarea class="form-control" id="message" name="message" rows="2" placeholder="Ask your Python question..." required></textarea>
+                    <button class="btn btn-primary" type="submit">Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('chat-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const messageInput = document.getElementById('message');
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    try {
+        const response = await fetch("{% url 'puzzle:ai_assistant' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `message=${encodeURIComponent(message)}`
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            const chatMessages = document.getElementById('chat-messages');
+            const chatHistory = document.getElementById('chat-history');
+
+            // Add user message to chat
+            chatMessages.innerHTML += `
+                <div class="message user-message">
+                    <span class="timestamp">${data.user_timestamp}</span>
+                    <strong>You:</strong> ${message}
+                </div>
+            `;
+
+            // Add AI response to chat
+            chatMessages.innerHTML += `
+                <div class="message ai-message">
+                    <span class="timestamp">${data.ai_timestamp}</span>
+                    <strong>Assistant:</strong> ${data.response}
+                </div>
+            `;
+
+            // Add user message to history
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.dataset.messageId = data.user_message_id;
+            historyItem.textContent = message.length > 50 ? message.substring(0, 47) + '...' : message;
+            chatHistory.appendChild(historyItem);
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            messageInput.value = '';
+        } else {
+            alert(data.error || 'An error occurred');
+        }
+    } catch (error) {
+        alert('An error occurred while sending the message');
+    }
+});
+
+// Highlight history item on click
+document.querySelectorAll('.history-item').forEach(item => {
+    item.addEventListener('click', function() {
+        document.querySelectorAll('.history-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+</script>
+{% endblock %}
