@@ -1,0 +1,1397 @@
+{% extends 'puzzle/base.html' %}
+{% load static %}
+
+{% block title %}AI Assistant - PyPuzzle{% endblock %}
+
+{% block extrastyle %}
+<style>
+    .assistant-container {
+        max-width: 100%;
+        margin: 0;
+        height: calc(100vh - var(--navbar-height));
+        display: flex;
+        flex-direction: column;
+        background-color: var(--bg-medium);
+        border-radius: 0;
+        overflow: hidden;
+        box-shadow: none;
+    }
+
+    .assistant-header {
+        padding: 1.25rem;
+        background-color: var(--bg-dark);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: none;
+    }
+
+    .assistant-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--rpg-gold);
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .assistant-title i {
+        font-size: 1.5rem;
+    }
+
+    .assistant-controls {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .assistant-btn {
+        background-color: transparent;
+        border: none;
+        color: var(--text-light);
+        font-size: 1.1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .assistant-btn:hover {
+        background-color: rgba(218, 165, 32, 0.1);
+        color: var(--rpg-gold);
+        transform: translateY(-2px);
+    }
+
+    .chat-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        scroll-behavior: smooth;
+    }
+
+    .message {
+        display: flex;
+        flex-direction: column;
+        max-width: 85%;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .message-user {
+        align-self: flex-end;
+    }
+
+    .message-assistant {
+        align-self: flex-start;
+    }
+
+    .message-content {
+        padding: 1rem 1.25rem;
+        border-radius: 16px;
+        position: relative;
+        line-height: 1.5;
+        border: none;
+    }
+
+    .message-user .message-content {
+        background-color: rgba(218, 165, 32, 0.25);
+        border-bottom-right-radius: 4px;
+        color: var(--text-light);
+        border: none;
+    }
+
+    .message-assistant .message-content {
+        background-color: var(--bg-light);
+        border-bottom-left-radius: 4px;
+        color: var(--text-light);
+        border: none;
+    }
+
+    .message-meta {
+        font-size: 0.75rem;
+        margin-top: 0.25rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .message-user .message-meta {
+        justify-content: flex-end;
+        padding-right: 0.5rem;
+    }
+
+    .message-assistant .message-meta {
+        padding-left: 0.5rem;
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+    }
+
+    .message-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .message-user .message-avatar {
+        background-color: rgba(218, 165, 32, 0.2);
+        color: var(--rpg-gold);
+        align-self: flex-end;
+    }
+
+    .message-assistant .message-avatar {
+        background: none;
+    }
+
+    .message-assistant .message-avatar img {
+        width: 32px;
+        height: 32px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .assistant-title img {
+        width: 32px;
+        height: 32px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.5rem 1rem;
+        background-color: var(--bg-light);
+        border-radius: 16px;
+        border-bottom-left-radius: 4px;
+        align-self: flex-start;
+        margin-top: 0.5rem;
+    }
+
+    .typing-dot {
+        width: 8px;
+        height: 8px;
+        background-color: var(--rpg-gold);
+        border-radius: 50%;
+        opacity: 0.6;
+    }
+
+    .typing-dot:nth-child(1) { animation: typingDot 1.5s infinite 0s; }
+    .typing-dot:nth-child(2) { animation: typingDot 1.5s infinite 0.3s; }
+    .typing-dot:nth-child(3) { animation: typingDot 1.5s infinite 0.6s; }
+
+    @keyframes typingDot {
+        0%, 100% { opacity: 0.6; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    .chat-input-container {
+        padding: 1.25rem;
+        background-color: var(--bg-dark);
+        position: relative;
+        border-top: none;
+    }
+
+    .chat-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        position: relative;
+        background-color: var(--bg-medium);
+        border-radius: 24px;
+        padding: 0.5rem 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .chat-input-wrapper:focus-within {
+        box-shadow: 0 4px 20px rgba(218, 165, 32, 0.2);
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: none;
+        background: none;
+        color: var(--text-light);
+        font-size: 1rem;
+        resize: none;
+        min-height: 24px;
+        max-height: 150px;
+        line-height: 1.5;
+    }
+
+    .chat-input:focus {
+        outline: none;
+    }
+
+    .chat-input::placeholder {
+        color: var(--text-muted);
+    }
+
+    .chat-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chat-action-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        padding: 0.5rem;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+    }
+
+    .chat-action-btn:hover {
+        color: var(--rpg-gold);
+        background-color: rgba(218, 165, 32, 0.1);
+    }
+
+    .chat-action-btn.active {
+        color: var(--rpg-gold);
+        background-color: rgba(218, 165, 32, 0.1);
+    }
+
+    .send-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 1.1rem;
+        padding: 0.5rem;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        margin-left: auto;
+    }
+
+    .send-btn:not(:disabled):hover {
+        color: var(--rpg-gold);
+        background-color: rgba(218, 165, 32, 0.1);
+    }
+
+    .send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .send-btn i {
+        font-size: 1.1rem;
+    }
+
+    .markdown-content {
+        line-height: 1.6;
+    }
+
+    .markdown-content p {
+        margin-bottom: 1rem;
+    }
+
+    .markdown-content h1, 
+    .markdown-content h2, 
+    .markdown-content h3, 
+    .markdown-content h4 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.75rem;
+        color: var(--rpg-gold);
+    }
+
+    .markdown-content pre {
+        background-color: var(--bg-dark);
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 1rem 0;
+        border: 1px solid var(--border-color);
+    }
+
+    .markdown-content code {
+        font-family: monospace;
+        background-color: var(--bg-dark);
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    .markdown-content pre code {
+        padding: 0;
+        background-color: transparent;
+    }
+
+    .markdown-content ul, 
+    .markdown-content ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+
+    .markdown-content li {
+        margin-bottom: 0.5rem;
+    }
+
+    .markdown-content blockquote {
+        border-left: 4px solid var(--rpg-gold);
+        padding-left: 1rem;
+        margin-left: 0;
+        margin-right: 0;
+        font-style: italic;
+        color: var(--text-muted);
+    }
+
+    .markdown-content a {
+        color: var(--rpg-gold);
+        text-decoration: none;
+    }
+
+    .markdown-content a:hover {
+        text-decoration: underline;
+    }
+
+    .code-block {
+        position: relative;
+        margin: 1rem 0;
+        background-color: var(--bg-dark);
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+
+    .code-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .code-language {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .code-language i {
+        color: var(--rpg-gold);
+    }
+
+    .code-copy {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .code-copy:hover {
+        color: var(--rpg-gold);
+        background-color: rgba(218, 165, 32, 0.1);
+    }
+
+    .code-copy.copied {
+        color: var(--rpg-gold);
+        background-color: rgba(218, 165, 32, 0.1);
+    }
+
+    .code-copy i {
+        font-size: 1rem;
+    }
+
+    .code-content {
+        padding: 1rem;
+        margin: 0;
+        overflow-x: auto;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        tab-size: 4;
+    }
+
+    .code-content pre {
+        margin: 0;
+        padding: 0;
+        background: none;
+        border: none;
+    }
+
+    .code-content code {
+        display: block;
+        white-space: pre;
+        color: var(--text-light);
+    }
+
+    /* Syntax highlighting colors */
+    .code-content .hljs-keyword { color: #ff79c6; }
+    .code-content .hljs-string { color: #f1fa8c; }
+    .code-content .hljs-comment { color: #6272a4; }
+    .code-content .hljs-function { color: #50fa7b; }
+    .code-content .hljs-number { color: #bd93f9; }
+    .code-content .hljs-built_in { color: #8be9fd; }
+    .code-content .hljs-params { color: #ffb86c; }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .assistant-container {
+            height: calc(100vh - var(--navbar-height) - 2rem);
+            border-radius: 0;
+        }
+
+        .message {
+            max-width: 90%;
+        }
+
+        .chat-input-wrapper {
+            flex-direction: column;
+        }
+
+        .chat-input {
+            width: 100%;
+        }
+
+        .send-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    /* Loading animation */
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(218, 165, 32, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--rpg-gold);
+        animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Voice recording animation */
+    .voice-recording {
+        position: absolute;
+        top: -50px;
+        right: 20px;
+        background: rgba(218, 165, 32, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 0.75rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--rpg-gold);
+        font-size: 0.9rem;
+        animation: slideDown 0.3s ease-out;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .voice-waves {
+        display: flex;
+        align-items: center;
+        height: 20px;
+    }
+
+    .voice-wave {
+        width: 3px;
+        height: 100%;
+        background-color: var(--rpg-gold);
+        border-radius: 3px;
+        margin: 0 2px;
+    }
+
+    .voice-wave:nth-child(1) { animation: wave 1s ease-in-out infinite; height: 30%; }
+    .voice-wave:nth-child(2) { animation: wave 1s ease-in-out infinite 0.2s; height: 60%; }
+    .voice-wave:nth-child(3) { animation: wave 1s ease-in-out infinite 0.4s; height: 80%; }
+    .voice-wave:nth-child(4) { animation: wave 1s ease-in-out infinite 0.6s; height: 40%; }
+    .voice-wave:nth-child(5) { animation: wave 1s ease-in-out infinite 0.8s; height: 70%; }
+
+    @keyframes wave {
+        0%, 100% { transform: scaleY(1); }
+        50% { transform: scaleY(2); }
+    }
+
+    @keyframes slideDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* Python Robot Logo Animation */
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(218, 165, 32, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(218, 165, 32, 0.8); }
+    }
+
+    .python-robot-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .session-info {
+        position: absolute;
+        top: 0.5rem;
+        right: 1rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .session-info i {
+        font-size: 0.9rem;
+    }
+
+    /* Voice mode styles */
+    .voice-mode-active .assistant-container {
+        background: linear-gradient(180deg, var(--bg-medium) 0%, var(--bg-dark) 100%);
+    }
+
+    .voice-mode-active .chat-input-wrapper {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .voice-mode-active .message-content {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(5px);
+        border: none;
+    }
+
+    /* Voice agent animation */
+    .voice-agent {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--rpg-gold);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        animation: pulseAgent 2s infinite;
+        z-index: 1000;
+    }
+
+    .voice-mode-active .voice-agent {
+        display: flex;
+    }
+
+    .voice-agent-waves {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: var(--rpg-gold);
+        opacity: 0.3;
+        animation: agentWaves 2s infinite;
+    }
+
+    .voice-agent i {
+        color: var(--bg-dark);
+        font-size: 1.5rem;
+        z-index: 1;
+    }
+
+    @keyframes pulseAgent {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    @keyframes agentWaves {
+        0% { transform: scale(1); opacity: 0.3; }
+        100% { transform: scale(1.5); opacity: 0; }
+    }
+
+    @keyframes speakingPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+
+    .voice-agent.speaking {
+        animation: speakingPulse 1s infinite;
+    }
+
+    .voice-agent.speaking .voice-agent-waves {
+        animation: agentWaves 1s infinite;
+    }
+
+    /* Message status styles */
+    .message-status {
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        margin-right: 0.5rem;
+    }
+    
+    .voice-indicator {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        font-size: 0.6rem;
+        color: var(--rpg-gold);
+        background: var(--bg-dark);
+        padding: 2px;
+        border-radius: 50%;
+    }
+    
+    .message-avatar {
+        position: relative;
+    }
+    
+    .code-copy {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0.25rem;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .code-copy:hover {
+        color: var(--rpg-gold);
+        background: rgba(218, 165, 32, 0.1);
+    }
+    
+    .code-copy.copied {
+        color: var(--rpg-gold);
+        background: rgba(218, 165, 32, 0.1);
+    }
+
+    /* Voice select styles */
+    .voice-select {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        padding: 0.25rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 0.5rem;
+    }
+
+    .voice-select:hover {
+        color: var(--rpg-gold);
+    }
+
+    .voice-select option {
+        background: var(--bg-dark);
+        color: var(--text-light);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="assistant-container" id="assistantContainer">
+    <div class="assistant-header">
+        <div class="assistant-title">
+            <i class="bi bi-robot"></i>
+            <span>AI Assistant</span>
+        </div>
+        <div class="assistant-controls">
+            <button class="assistant-btn" id="clearBtn" title="Clear Conversation">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+            <!-- Welcome message -->
+            <div class="message message-assistant">
+                <div class="message-avatar">
+                    <img src="{% static 'images/assistant.jpg' %}" alt="Python Robot">
+                </div>
+                <div class="message-content">
+                    <div class="markdown-content">
+                        <p>👋 Hello! I'm your Python Puzzle AI Assistant. I can help you with:</p>
+                        <ul>
+                            <li>Explaining Python concepts</li>
+                            <li>Debugging your code</li>
+                            <li>Providing hints for puzzles</li>
+                            <li>Suggesting learning resources</li>
+                        </ul>
+                        <p>How can I assist you today?</p>
+                    </div>
+                </div>
+                <div class="message-meta">
+                    <span class="message-time">Just now</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="userInput" 
+                    placeholder="Ask anything..." 
+                    rows="1"
+                    aria-label="Type your message"
+                ></textarea>
+                <div class="chat-actions">
+                    <button class="chat-action-btn" id="voiceBtn" title="Voice Input">
+                        <i class="bi bi-mic"></i>
+                    </button>
+                    <button class="chat-action-btn" id="voiceResponseBtn" title="Enable Voice Mode">
+                        <i class="bi bi-speaker"></i>
+                    </button>
+                    <select class="voice-select" id="voiceSelect" title="Select Voice">
+                        <option value="">Select Voice</option>
+                    </select>
+                </div>
+                <button class="send-btn" id="sendBtn" disabled>
+                    <i class="bi bi-send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Voice agent element -->
+<div class="voice-agent">
+    <div class="voice-agent-waves"></div>
+    <i class="bi bi-mic"></i>
+</div>
+
+<!-- Voice select dropdown -->
+<select class="voice-select" style="display: none;">
+    <option value="">Select Voice</option>
+</select>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Load highlight.js and marked properly -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.querySelector('.chat-messages');
+        const chatInput = document.querySelector('.chat-input');
+        const sendButton = document.querySelector('.send-btn');
+        const voiceBtn = document.querySelector('#voiceBtn');
+        const voiceResponseBtn = document.querySelector('#voiceResponseBtn');
+        const modelSelect = document.querySelector('#modelSelect');
+        
+        let isVoiceEnabled = false;
+        let isVoiceResponseEnabled = false;
+        let isListening = false;
+        let recognition = null;
+        let speechSynthesis = window.speechSynthesis;
+        let currentUtterance = null;
+
+        // Add the addMessage function
+        function addMessage(content, type = 'user', is_voice = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            if (type === 'user') {
+                avatar.innerHTML = '<i class="bi bi-person"></i>';
+                if (is_voice) {
+                    avatar.innerHTML += '<i class="bi bi-mic-fill voice-indicator"></i>';
+                }
+            } else {
+                avatar.innerHTML = '<i class="bi bi-robot"></i>';
+            }
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            
+            if (type === 'assistant') {
+                messageContent.innerHTML = formatMarkdown(content);
+                // Add copy button for code blocks
+                messageContent.querySelectorAll('pre code').forEach((block) => {
+                    const codeBlock = block.parentElement;
+                    const copyButton = document.createElement('button');
+                    copyButton.className = 'code-copy';
+                    copyButton.innerHTML = '<i class="bi bi-clipboard"></i>';
+                    copyButton.onclick = () => {
+                        navigator.clipboard.writeText(block.textContent)
+                            .then(() => {
+                                copyButton.classList.add('copied');
+                                copyButton.innerHTML = '<i class="bi bi-check"></i>';
+                                setTimeout(() => {
+                                    copyButton.classList.remove('copied');
+                                    copyButton.innerHTML = '<i class="bi bi-clipboard"></i>';
+                                }, 2000);
+                            });
+                    };
+                    codeBlock.parentElement.insertBefore(copyButton, codeBlock);
+                    hljs.highlightElement(block);
+                });
+            } else {
+                messageContent.textContent = content;
+            }
+            
+            const meta = document.createElement('div');
+            meta.className = 'message-meta';
+            
+            const time = document.createElement('span');
+            time.className = 'message-time';
+            time.innerHTML = `<i class="bi bi-clock"></i> ${new Date().toLocaleTimeString()}`;
+            
+            // Add message status indicators
+            if (type === 'assistant') {
+                const status = document.createElement('span');
+                status.className = 'message-status';
+                status.innerHTML = '<i class="bi bi-check2-all"></i>';
+                meta.appendChild(status);
+            }
+            
+            meta.appendChild(time);
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            messageDiv.appendChild(meta);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Add the formatMarkdown function
+        function formatMarkdown(text) {
+            try {
+                if (!text) return '';
+                return marked.parse(text);
+            } catch (error) {
+                console.error('Error parsing markdown:', error);
+                return text;
+            }
+        }
+
+        // Add the getCookie function
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Initialize speech recognition
+        try {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+        } catch (e) {
+            console.error('Speech recognition not supported:', e);
+            voiceBtn.style.display = 'none';
+        }
+
+        // Voice input handling
+        if (voiceBtn && recognition) {
+            voiceBtn.addEventListener('click', () => {
+                if (!isListening) {
+                    startVoiceInput();
+                } else {
+                    stopVoiceInput();
+                }
+            });
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceBtn.classList.add('active');
+                showRecordingIndicator();
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                chatInput.value = transcript;
+                sendVoiceMessage(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                stopVoiceInput();
+            };
+
+            recognition.onend = () => {
+                stopVoiceInput();
+            };
+        }
+
+        function startVoiceInput() {
+            try {
+                recognition.start();
+                isVoiceResponseEnabled = true;
+                voiceResponseBtn.classList.add('active');
+            } catch (e) {
+                console.error('Error starting voice input:', e);
+                stopVoiceInput();
+            }
+        }
+
+        function stopVoiceInput() {
+            isListening = false;
+            voiceBtn.classList.remove('active');
+            hideRecordingIndicator();
+            try {
+                recognition.stop();
+            } catch (e) {
+                console.error('Error stopping voice input:', e);
+            }
+        }
+
+        function showRecordingIndicator() {
+            const recordingIndicator = document.createElement('div');
+            recordingIndicator.className = 'voice-recording';
+            recordingIndicator.innerHTML = `
+                <div class="voice-waves">
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                    <div class="voice-wave"></div>
+                </div>
+                <span>Listening...</span>
+            `;
+            chatInput.parentNode.appendChild(recordingIndicator);
+        }
+
+        function hideRecordingIndicator() {
+            const recordingIndicator = document.querySelector('.voice-recording');
+            if (recordingIndicator) {
+                recordingIndicator.remove();
+            }
+        }
+
+        // Voice response handling
+        if (voiceResponseBtn) {
+            voiceResponseBtn.addEventListener('click', () => {
+                isVoiceResponseEnabled = !isVoiceResponseEnabled;
+                voiceResponseBtn.classList.toggle('active');
+                assistantContainer.classList.toggle('voice-mode-active');
+                
+                if (!isVoiceResponseEnabled && currentUtterance) {
+                    speechSynthesis.cancel();
+                }
+
+                const voiceAgent = document.querySelector('.voice-agent');
+                if (voiceAgent) {
+                    voiceAgent.style.display = isVoiceResponseEnabled ? 'flex' : 'none';
+                }
+            });
+        }
+
+        function speakText(text) {
+            if (!isVoiceResponseEnabled || !text) return;
+
+            if (currentUtterance) {
+                speechSynthesis.cancel();
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Get available voices and select Sky voice
+            const voices = speechSynthesis.getVoices();
+            let selectedVoice = voices.find(voice => voice.name === 'Sky');
+            
+            if (!selectedVoice) {
+                // Fallback to a natural-sounding voice if Sky is not available
+                selectedVoice = voices.find(voice => 
+                    voice.name.includes('Microsoft') || 
+                    voice.name.includes('Google') ||
+                    voice.name.includes('Natural') ||
+                    voice.name.includes('Samantha') ||
+                    voice.name.includes('Daniel')
+                );
+            }
+            
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+
+            // Adjust voice properties for a more natural sound
+            utterance.rate = 1.0;  // Normal speaking rate
+            utterance.pitch = 1.0; // Normal pitch
+            utterance.volume = 1.0;
+            utterance.lang = 'en-US';
+
+            const voiceAgent = document.querySelector('.voice-agent');
+            if (voiceAgent) {
+                voiceAgent.classList.add('speaking');
+            }
+
+            utterance.onstart = () => {
+                currentUtterance = utterance;
+                if (voiceAgent) {
+                    voiceAgent.style.animation = 'speakingPulse 1s infinite';
+                }
+            };
+
+            utterance.onend = () => {
+                currentUtterance = null;
+                if (voiceAgent) {
+                    voiceAgent.classList.remove('speaking');
+                    voiceAgent.style.animation = 'pulseAgent 2s infinite';
+                }
+            };
+
+            utterance.onerror = (event) => {
+                console.error('Speech error:', event.error);
+                currentUtterance = null;
+                if (voiceAgent) {
+                    voiceAgent.classList.remove('speaking');
+                    voiceAgent.style.animation = 'pulseAgent 2s infinite';
+                }
+            };
+
+            speechSynthesis.speak(utterance);
+        }
+
+        function sendVoiceMessage(message) {
+            if (!message) return;
+            
+            addMessage(message, 'user', true); // Mark as voice message
+            chatInput.value = '';
+            
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message message-assistant';
+            loadingDiv.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            fetch('{% url "puzzle:ai_assistant" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    is_voice_input: true,
+                    voice_response: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.remove();
+                
+                if (data.error) {
+                    addMessage('Error: ' + data.error, 'error');
+                } else {
+                    addMessage(data.message, 'assistant');
+                    if (data.speech_text) {
+                        speakText(data.speech_text);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingDiv.remove();
+                addMessage('Error: Could not connect to the server', 'error');
+            });
+        }
+
+        // Update voice selection handling
+        const voiceSelect = document.getElementById('voiceSelect');
+        if (voiceSelect) {
+            function populateVoiceList() {
+                const voices = speechSynthesis.getVoices();
+                voiceSelect.innerHTML = '<option value="">Select Voice</option>';
+                
+                // Sort voices by name
+                voices.sort((a, b) => a.name.localeCompare(b.name));
+                
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.name;
+                    option.textContent = `${voice.name} (${voice.lang})`;
+                    voiceSelect.appendChild(option);
+                });
+
+                // Load saved voice preference
+                const savedVoice = localStorage.getItem('selectedVoice');
+                if (savedVoice) {
+                    const voice = voices.find(v => v.name === savedVoice);
+                    if (voice) {
+                        voiceSelect.value = savedVoice;
+                    }
+                }
+            }
+
+            // Populate voice list when voices are loaded
+            if (speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+
+            // Also try to populate immediately in case voices are already loaded
+            if (speechSynthesis.getVoices().length > 0) {
+                populateVoiceList();
+            }
+
+            voiceSelect.addEventListener('change', () => {
+                const selectedVoice = speechSynthesis.getVoices().find(
+                    voice => voice.name === voiceSelect.value
+                );
+                if (selectedVoice) {
+                    localStorage.setItem('selectedVoice', selectedVoice.name);
+                }
+            });
+
+            // Show/hide voice select based on voice mode
+            voiceResponseBtn.addEventListener('click', () => {
+                voiceSelect.style.display = isVoiceResponseEnabled ? 'none' : 'block';
+            });
+        }
+
+        // Modified sendMessage function for text input
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            chatInput.value = '';
+            
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message message-assistant';
+            loadingDiv.innerHTML = '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+            chatMessages.appendChild(loadingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            fetch('{% url "puzzle:ai_assistant" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    is_voice_input: true,
+                    voice_response: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.remove();
+                
+                if (data.error) {
+                    addMessage('Error: ' + data.error, 'error');
+                } else {
+                    addMessage(data.message, 'assistant');
+                    if (data.speech_text) {
+                        speakText(data.speech_text);
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingDiv.remove();
+                addMessage('Error: Could not connect to the server', 'error');
+            });
+        }
+
+        // Event listeners for text input
+        if (sendButton) {
+            sendButton.addEventListener('click', sendMessage);
+        }
+
+        if (chatInput) {
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (sendButton) {
+                    sendButton.disabled = !this.value.trim();
+                }
+            });
+        }
+
+        // Add speaking animation styles
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes speakingPulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+
+            .voice-agent.speaking {
+                animation: speakingPulse 1s infinite;
+            }
+
+            .voice-agent.speaking .voice-agent-waves {
+                animation: agentWaves 1s infinite;
+            }
+        `;
+        document.head.appendChild(styleSheet);
+
+        // Add message status styles
+        const statusStyles = document.createElement('style');
+        statusStyles.textContent = `
+            .message-status {
+                color: var(--text-muted);
+                font-size: 0.7rem;
+                margin-right: 0.5rem;
+            }
+            
+            .voice-indicator {
+                position: absolute;
+                bottom: 2px;
+                right: 2px;
+                font-size: 0.6rem;
+                color: var(--rpg-gold);
+                background: var(--bg-dark);
+                padding: 2px;
+                border-radius: 50%;
+            }
+            
+            .message-avatar {
+                position: relative;
+            }
+            
+            .code-copy {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+                background: transparent;
+                border: none;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: all 0.2s ease;
+            }
+            
+            .code-copy:hover {
+                color: var(--rpg-gold);
+                background: rgba(218, 165, 32, 0.1);
+            }
+            
+            .code-copy.copied {
+                color: var(--rpg-gold);
+                background: rgba(218, 165, 32, 0.1);
+            }
+        `;
+        document.head.appendChild(statusStyles);
+
+        // Add clear conversation functionality
+        const clearBtn = document.querySelector('#clearBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                chatMessages.innerHTML = '';
+                // Add welcome message back
+                addMessage(`
+                    👋 Hello! I'm your Python Puzzle AI Assistant. I can help you with:
+                    
+                    * Explaining Python concepts
+                    * Debugging your code
+                    * Providing hints for puzzles
+                    * Suggesting learning resources
+                    
+                    How can I assist you today?
+                `, 'assistant');
+            });
+        }
+
+        // Add auto-resize for chat input
+        if (chatInput) {
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (sendButton) {
+                    sendButton.disabled = !this.value.trim();
+                }
+            });
+        }
+
+        // Add message persistence
+        window.addEventListener('beforeunload', function() {
+            const messages = Array.from(chatMessages.querySelectorAll('.message')).map(msg => ({
+                content: msg.querySelector('.message-content').textContent,
+                is_bot: msg.classList.contains('message-assistant'),
+                is_voice: msg.querySelector('.voice-indicator') !== null,
+                timestamp: msg.querySelector('.message-time').textContent
+            }));
+            localStorage.setItem('chat_history', JSON.stringify(messages));
+        });
+
+        // Load persisted messages
+        const savedMessages = localStorage.getItem('chat_history');
+        if (savedMessages) {
+            try {
+                const messages = JSON.parse(savedMessages);
+                messages.forEach(msg => {
+                    addMessage(msg.content, msg.is_bot ? 'assistant' : 'user', msg.is_voice);
+                });
+            } catch (error) {
+                console.error('Error loading saved messages:', error);
+                localStorage.removeItem('chat_history');
+            }
+        }
+    });
+</script>
+{% endblock %}
