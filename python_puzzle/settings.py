@@ -26,7 +26,8 @@ SECRET_KEY = "django-insecure-3^z77a8)38iwsbmn^hd0ov-egpkiw6pmvb4y7*64v=bm$d)b(d
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["pypuzzle-production.up.railway.app"]
+
 
 
 # Application definition
