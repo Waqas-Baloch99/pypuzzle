@@ -28,6 +28,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["pypuzzle-production.up.railway.app"]
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://pypuzzle-production.up.railway.app"
+]
 
 
 # Application definition
