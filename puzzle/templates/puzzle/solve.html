@@ -1,157 +1,255 @@
-{% extends 'puzzle/base.html' %}
+{% extends "puzzle/base.html" %}
 
-{% block title %}{{ puzzle.title }}{% endblock %}
+{% block title %}{{ puzzle.title }} - Solve Puzzle{% endblock %}
 
 {% block extrastyle %}
 <style>
-    .feedback {
-        margin-top: 1rem;
-        padding: 1rem;
-        background-color: rgba(255, 193, 7, 0.1);
-        border: 1px solid var(--rpg-gold);
-        border-radius: 0.25rem;
-        color: var(--rpg-light);
+    .puzzle-container {
+        max-width: 1200px; /* Increased from 800px */
+        margin: 0 auto;
+        padding: 3rem; /* Increased from 2rem */
     }
-    .test-cases {
-        background-color: #2a2a2a;
-        padding: 1rem;
-        border-radius: 0.25rem;
-        margin-bottom: 1rem;
-        color: var(--rpg-light);
-        font-size: 0.9rem;
+
+    .puzzle-header {
+        margin-bottom: 3rem; /* Increased from 2rem */
     }
-    .form-group label {
-        color: var(--rpg-light);
+
+    .puzzle-title {
+        color: var(--rpg-gold);
+        font-size: 3rem; /* Increased from 2rem */
+        font-weight: 700;
+        margin-bottom: 1.5rem; /* Increased from 1rem */
     }
-    .form-control, select, textarea {
-        background-color: var(--rpg-slate);
-        color: var(--rpg-light);
-        border-color: rgba(218, 165, 32, 0.2);
-        border-radius: 0.25rem;
+
+    .puzzle-description {
+        color: var(--text-light);
+        font-size: 1.3rem; /* Increased from 1.1rem */
+        line-height: 1.8; /* Increased from 1.6 */
+        margin-bottom: 3rem; /* Increased from 2rem */
+        white-space: pre-wrap;
     }
-    .form-control:focus, select:focus, textarea:focus {
-        border-color: var(--rpg-gold);
-        box-shadow: 0 0 5px rgba(218, 165, 32, 0.5);
+
+    .puzzle-meta {
+        display: flex;
+        gap: 1.5rem; /* Increased from 1rem */
+        margin-bottom: 2rem; /* Increased from 1.5rem */
     }
-    .btn-primary {
+
+    .badge {
+        padding: 0.75rem 1.5rem; /* Increased from 0.5rem 1rem */
+        border-radius: 25px; /* Increased from 20px */
+        font-size: 1rem; /* Increased from 0.9rem */
+        font-weight: 600;
+    }
+
+    .badge-difficulty {
+        background-color: var(--bg-medium);
+        color: var(--text-light);
+    }
+
+    .badge-xp {
         background-color: var(--rpg-gold);
-        border-color: var(--rpg-gold);
         color: #000;
-        transition: background-color 0.2s ease;
     }
-    .btn-primary:hover {
-        background-color: rgba(218, 165, 32, 0.8);
+
+    .badge-type {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
     }
+
+    .solution-container {
+        background: var(--bg-medium);
+        border-radius: 15px; /* Increased from 10px */
+        padding: 3rem; /* Increased from 2rem */
+        margin-bottom: 3rem; /* Increased from 2rem */
+    }
+
+    .mcq-options {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem; /* Increased from 1rem */
+        margin-bottom: 3rem; /* Increased from 2rem */
+    }
+
+    .mcq-option {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem; /* Increased from 1rem */
+        background: var(--bg-dark);
+        border-radius: 10px; /* Increased from 8px */
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .mcq-option:hover {
+        background: var(--bg-light);
+        transform: translateX(8px); /* Increased from 5px */
+    }
+
+    .mcq-option input[type="radio"] {
+        margin-right: 1.5rem; /* Increased from 1rem */
+        width: 25px; /* Increased from 20px */
+        height: 25px; /* Increased from 20px */
+    }
+
+    .mcq-option label {
+        color: var(--text-light);
+        font-size: 1.1rem; /* Increased for readability */
+        width: 100%;
+    }
+
+    .mcq-option.correct-answer {
+        background: #2ecc71;
+        color: #fff;
+    }
+
+    .mcq-option.selected-answer {
+        background: #3498db;
+        color: #fff;
+    }
+
+    .code-editor {
+        width: 100%;
+        min-height: 400px; /* Increased from 300px */
+        background: var(--bg-dark);
+        border-radius: 10px; /* Increased from 8px */
+        padding: 1.5rem; /* Increased from 1rem */
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem; /* Increased from 1rem */
+        color: var(--text-light);
+        margin-bottom: 1.5rem; /* Increased from 1rem */
+    }
+
+    .submit-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem; /* Increased from 0.5rem */
+        background: var(--rpg-gold);
+        color: #000;
+        padding: 1rem 2rem; /* Increased from 0.75rem 1.5rem */
+        border-radius: 10px; /* Increased from 8px */
+        text-decoration: none;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+        background: var(--rpg-gold-light);
+        transform: translateY(-3px); /* Increased from -2px */
+        box-shadow: 0 6px 15px rgba(218, 165, 32, 0.3); /* Adjusted shadow */
+    }
+
+    .feedback-container {
+        margin-top: 3rem; /* Increased from 2rem */
+        padding: 2rem; /* Increased from 1.5rem */
+        border-radius: 10px; /* Increased from 8px */
+        background: var(--bg-medium);
+    }
+
+    .feedback-success {
+        color: #2ecc71;
+    }
+
+    .feedback-error {
+        color: #e74c3c;
+    }
+
+    .navigation-buttons {
+        display: flex;
+        gap: 1.5rem; /* Increased from 1rem */
+        margin-top: 3rem; /* Increased from 2rem */
+    }
+
     .btn-secondary {
-        border-color: var(--rpg-gold);
-        color: var(--rpg-gold);
-        transition: background-color 0.2s ease;
+        background: var(--bg-dark);
+        color: var(--text-light);
+        padding: 1rem 2rem; /* Increased from 0.75rem 1.5rem */
+        border-radius: 10px; /* Increased from 8px */
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
+
     .btn-secondary:hover {
-        background-color: rgba(218, 165, 32, 0.2);
-        color: #000;
-    }
-    .card {
-        background-color: var(--rpg-slate);
-        border: 1px solid rgba(218, 165, 32, 0.2);
-    }
-    .card-title {
-        color: var(--rpg-gold);
-    }
-    .card-text {
-        color: var(--rpg-light);
+        background: var(--bg-light);
+        color: var(--text-light);
+        text-decoration: none;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4" style="color: var(--rpg-gold);">{{ puzzle.title }} <small class="text-muted">({{ type_display }})</small></h1>
-    
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">Description</h5>
-            <p class="card-text">{{ puzzle.description }}</p>
-
-            {% if puzzle.test_cases %}
-            <h5 class="mt-3">Test Cases (Reference)</h5>
-            <div class="test-cases">
-                <pre>{{ puzzle.test_cases|json_script:"test-cases"|safe }}</pre>
-            </div>
-            {% endif %}
+<div class="puzzle-container">
+    <div class="puzzle-header">
+        <h1 class="puzzle-title">{{ puzzle.title }}</h1>
+        <div class="puzzle-meta">
+            <span class="badge badge-difficulty">{{ puzzle.get_level_display }}</span>
+            <span class="badge badge-xp">{{ puzzle.xp_reward }} XP</span>
+            <span class="badge badge-type">{{ puzzle.puzzle_type }}</span>
         </div>
+        <div class="puzzle-description">{{ puzzle.description }}</div>
     </div>
 
-    {% if messages %}
-    <div class="mb-4">
-        {% for message in messages %}
-        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% else %}alert-danger{% endif %}" role="alert">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    {% if submission and not submission.is_correct %}
-    <div class="feedback">
-        <h5>Feedback</h5>
-        <p>
-            {% if puzzle.puzzle_type == 'mcq' %}
-                Your answer: <strong>{{ submission.answer }}</strong> was incorrect.
-                {% if submission.feedback %}
-                    {{ submission.feedback }}
-                {% else %}
-                    Please try again.
-                {% endif %}
-            {% else %}
-                {% with feedback=submission.feedback|default:'{}'|safe|json_script:"feedback" %}
-                <script type="text/javascript">
-                    const feedback = JSON.parse('{{ feedback|escapejs }}');
-                    const pro = feedback.gemini_pro ? feedback.gemini_pro.feedback : "Error";
-                    const mini = feedback.gemini_mini ? feedback.gemini_mini.feedback : "Error";
-                    document.write(`Gemini Pro: ${pro}<br>Gemini Mini: ${mini}`);
-                </script>
-                {% endwith %}
-            {% endif %}
-        </p>
-    </div>
-    {% endif %}
-
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">Submit Your Solution</h5>
-            {% if is_solved %}
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle-fill me-2"></i>You've already solved this puzzle!
+    <div class="solution-container">
+        {% if puzzle.puzzle_type == 'MCQ' %}
+            <form method="post">
+                {% csrf_token %}
+                <div class="mcq-options">
+                    {% for option in mcq_options %}
+                        <div class="mcq-option {% if submission.is_correct and option.key == puzzle.solution %}correct-answer{% endif %} {% if selected_answer == option.key %}selected-answer{% endif %}">
+                            <input type="radio" name="answer" value="{{ option.key }}" id="option-{{ option.key }}"
+                                {% if selected_answer == option.key %}checked{% endif %}
+                                {% if is_solved %}disabled{% endif %}
+                                required>
+                            <label for="option-{{ option.key }}">{{ option.value }}</label>
+                        </div>
+                    {% endfor %}
                 </div>
-                <a href="{% url 'puzzle:detail' puzzle.id %}" class="btn btn-secondary">Back to Details</a>
-            {% else %}
-                <form method="post" action="{% url 'puzzle:solve' puzzle.id %}">
-                    {% csrf_token %}
-                    {% if puzzle.puzzle_type == 'mcq' %}
-                    <div class="form-group">
-                        {{ form.answer.label_tag }}
-                        {{ form.answer }}
-                        {% if form.answer.errors %}
-                        <div class="text-danger">{{ form.answer.errors }}</div>
-                        {% endif %}
-                    </div>
-                    {% else %}
-                    <div class="form-group">
-                        <label for="id_code">Your Code</label>
-                        {{ form.code }}
-                        {% if form.code.errors %}
-                        <div class="text-danger">{{ form.code.errors }}</div>
-                        {% endif %}
-                    </div>
+                {% if not is_solved %}
+                    <button type="submit" class="submit-btn">
+                        <i class="bi bi-check-circle"></i>
+                        Submit Answer
+                    </button>
+                {% endif %}
+            </form>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <textarea name="code" class="code-editor" required>{{ form.code.value|default:puzzle.starter_code }}</textarea>
+                <button type="submit" class="submit-btn">
+                    <i class="bi bi-play-circle"></i>
+                    Run Code
+                </button>
+            </form>
+        {% endif %}
+
+        {% if submission %}
+            <div class="feedback-container {% if submission.is_correct %}feedback-success{% else %}feedback-error{% endif %}">
+                {% if submission.is_correct %}
+                    <p>✅ Correct solution! You earned {{ puzzle.xp_reward }} XP!</p>
+                {% else %}
+                    <p>❌ Incorrect solution. Try again!</p>
+                    {% if submission.feedback %}
+                        <p>{{ submission.feedback }}</p>
                     {% endif %}
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary">Submit</button>
-                        <a href="{% url 'puzzle:detail' puzzle.id %}" class="btn btn-secondary ms-2">Back to Details</a>
-                    </div>
-                </form>
-            {% endif %}
-        </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="navigation-buttons">
+        <a href="{% url 'puzzle:puzzles' %}" class="btn-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to Puzzles
+        </a>
+        {% if next_puzzle %}
+            <a href="{% url 'puzzle:solve' next_puzzle.id %}" class="submit-btn">
+                Next Puzzle
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

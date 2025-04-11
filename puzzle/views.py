@@ -4,14 +4,22 @@ from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy
-from .models import Puzzle, Submission, UserProfile, ChatMessage
-from .forms import PuzzleSubmissionForm, SignUpForm, EmailAuthenticationForm
+from django.db.models import Exists, OuterRef, Count, Q, Sum
+from .models import Puzzle, Submission, Profile, ChatMessage, RoadmapTopic, Topic
+from .forms import PuzzleSubmissionForm, SignUpForm, EmailAuthenticationForm, UserProfileForm
 import google.generativeai as genai
 from decouple import config
 import json
 import logging
 import re
 from django.http import JsonResponse
+from django.utils import timezone
+from datetime import timedelta
+import os
+import time
+from django.conf import settings
+from gtts import gTTS
+import uuid
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -19,40 +27,77 @@ logger = logging.getLogger(__name__)
 # Configure Gemini API globally
 genai.configure(api_key=config('GEMINI_API_KEY'))
 gemini_pro = genai.GenerativeModel('gemini-2.0-flash')
-gemini_mini = genai.GenerativeModel('gemini-1.5-flash')
+gemini_mini = genai.GenerativeModel('gemini-2.0-flash')
 
 @login_required
 def index(request):
-    """Display all puzzles ordered by category and level with filtering."""
-    category_filter = request.GET.get('category', 'all')
-    level_filter = request.GET.get('level', 'all')
+    # Get user's progress
+    total_puzzles = Puzzle.objects.count()
+    solved_puzzles = Submission.objects.filter(
+        user=request.user,
+        is_correct=True
+    ).count()
     
-    puzzles = Puzzle.objects.all()
+    # Calculate completion percentage
+    completion_percentage = (solved_puzzles / total_puzzles * 100) if total_puzzles > 0 else 0
     
-    if category_filter != 'all':
-        puzzles = puzzles.filter(category=category_filter)
+    # Get user's recent activity
+    recent_submissions = Submission.objects.filter(
+        user=request.user
+    ).order_by('-submitted_at')[:5]
     
-    if category_filter != 'all' and level_filter != 'all':
-        puzzles = puzzles.filter(level=level_filter)
+    # Get user's XP and level
+    user_profile = request.user.profile
+    current_xp = user_profile.xp
+    current_level = user_profile.level
+    xp_for_next_level = (current_level + 1) * 1000
+    xp_progress = (current_xp % 1000) / 10  # Convert to percentage
     
+    context = {
+        'total_puzzles': total_puzzles,
+        'solved_puzzles': solved_puzzles,
+        'completion_percentage': round(completion_percentage, 1),
+        'recent_submissions': recent_submissions,
+        'current_xp': current_xp,
+        'current_level': current_level,
+        'xp_for_next_level': xp_for_next_level,
+        'xp_progress': xp_progress
+    }
+    
+    return render(request, 'puzzle/index.html', context)
+
+@login_required
+def puzzles(request):
+    topic_id = request.GET.get('topic')
+    if topic_id:
+        puzzles = Puzzle.objects.filter(roadmap_topic__id=topic_id).order_by('roadmap_topic__order', 'order')
+    else:
+        puzzles = Puzzle.objects.all().order_by('roadmap_topic__order', 'order')
+    
+    # Get the solved puzzles for the current user
+    solved_puzzle_ids = Submission.objects.filter(
+        user=request.user,
+        is_correct=True
+    ).values_list('puzzle_id', flat=True)
+    
+    # Add solved status to each puzzle
     for puzzle in puzzles:
-        puzzle.level_display = puzzle.get_level_display()
-        puzzle.category_display = puzzle.get_category_display()
-        puzzle.type_display = 'MCQ' if puzzle.puzzle_type == 'mcq' else 'Coding'
+        puzzle.is_solved = puzzle.id in solved_puzzle_ids
     
-    return render(request, 'puzzle/index.html', {
+    topics = RoadmapTopic.objects.filter(parent__isnull=True).order_by('order')
+    
+    context = {
         'puzzles': puzzles,
-        'current_category': category_filter,
-        'current_level': level_filter,
-        'categories': Puzzle.CATEGORIES,
-        'level_choices': Puzzle.LEVEL_CHOICES
-    })
+        'topics': topics,
+        'selected_topic': int(topic_id) if topic_id else None
+    }
+    return render(request, 'puzzle/puzzles.html', context)
 
 @login_required
 def puzzle_detail(request, puzzle_id):
     """Display puzzle details and redirect to solve page for submission."""
     puzzle = get_object_or_404(Puzzle, pk=puzzle_id)
-    user_profile = request.user.userprofile
+    user_profile = request.user.profile
     existing_submission = Submission.objects.filter(user=request.user, puzzle=puzzle).first()
 
     context = {
@@ -60,126 +105,223 @@ def puzzle_detail(request, puzzle_id):
         'submission': existing_submission,
         'is_solved': puzzle in user_profile.solved_puzzles.all(),
         'type_display': 'MCQ' if puzzle.puzzle_type == 'mcq' else 'Coding',
+        'topic': puzzle.roadmap_topic
     }
     return render(request, 'puzzle/detail.html', context)
 
 @login_required
+def roadmap_view(request):
+    """Display the Python learning roadmap with interactive visualization."""
+    topics = RoadmapTopic.objects.all().select_related('parent')
+    user_profile = request.user.profile
+    completed_puzzles = user_profile.solved_puzzles.all()
+    
+    nodes = []
+    edges = []
+    
+    for topic in topics:
+        # Check completion status - a topic is completed if all its puzzles are solved
+        topic_puzzles = topic.puzzles.all()
+        is_completed = topic_puzzles.exists() and all(puzzle in completed_puzzles for puzzle in topic_puzzles)
+        
+        # Create node with improved styling
+        node = {
+            "id": topic.id,
+            "label": topic.title,
+            "color": {
+                "background": "#2ecc71" if is_completed else "#cccccc",
+                "border": "#27ae60" if is_completed else "#bbbbbb",
+                "highlight": {
+                    "background": "#27ae60" if is_completed else "#dddddd",
+                    "border": "#219a52" if is_completed else "#aaaaaa"
+                }
+            },
+            "puzzle_ids": [puzzle.id for puzzle in topic_puzzles],
+            "title": f"<div style='max-width: 200px; padding: 8px;'>"
+                    f"<strong>{topic.title}</strong><br/>"
+                    f"{'✓ Completed' if is_completed else 'Not completed yet'}"
+                    f"</div>"
+        }
+        nodes.append(node)
+        
+        # Create edge if there's a parent
+        if topic.parent:
+            edges.append({
+                "from": topic.parent.id,
+                "to": topic.id,
+                "arrows": "to",
+                "color": {
+                    "color": "#2c3e50",
+                    "highlight": "#34495e"
+                }
+            })
+    
+    roadmap_data = {
+        "nodes": nodes,
+        "edges": edges
+    }
+    
+    return render(request, 'puzzle/roadmap.html', {
+        "roadmap_data": roadmap_data
+    })
+
+from django.urls import reverse
+
+@login_required
 def solve_puzzle(request, puzzle_id):
-    """Handle puzzle solving with LLM validation for coding puzzles and allow retries."""
+    """Handle puzzle solving with direct validation for MCQs and LLM validation for coding puzzles."""
     puzzle = get_object_or_404(Puzzle, pk=puzzle_id)
-    user_profile = request.user.userprofile
+    user_profile = request.user.profile
     existing_submission = Submission.objects.filter(user=request.user, puzzle=puzzle).first()
     stored_code = request.session.get(f'retry_code_{puzzle_id}', '')
 
-    if request.method == 'POST':
-        form = PuzzleSubmissionForm(request.POST, puzzle=puzzle)
-        if form.is_valid():
-            if existing_submission:
-                submission = existing_submission
-            else:
-                submission = form.save(commit=False)
-                submission.user = request.user
-                submission.puzzle = puzzle
+    # Debug logging
+    logger.debug(f"Puzzle type: {puzzle.puzzle_type}")
+    logger.debug(f"Test cases: {puzzle.test_cases}")
+    logger.debug(f"Solution: {puzzle.solution}")
 
-            if puzzle.puzzle_type == 'mcq':
-                submission.answer = form.cleaned_data['answer']
-                submission.status = 'completed'
-            else:
+    # Get next puzzle in the same topic
+    next_puzzle = None
+    if puzzle.roadmap_topic:
+        next_puzzle = Puzzle.objects.filter(
+            roadmap_topic=puzzle.roadmap_topic,
+            id__gt=puzzle.id,
+            is_active=True
+        ).exclude(id__in=user_profile.solved_puzzles.values_list('id', flat=True)).order_by('id').first()
+        
+        # If no next puzzle in current topic, get first puzzle from next topic
+        if not next_puzzle:
+            next_topic = RoadmapTopic.objects.filter(
+                order__gt=puzzle.roadmap_topic.order
+            ).order_by('order').first()
+            if next_topic:
+                next_puzzle = Puzzle.objects.filter(
+                    roadmap_topic=next_topic,
+                    is_active=True
+                ).exclude(id__in=user_profile.solved_puzzles.values_list('id', flat=True)).order_by('id').first()
+
+    if request.method == 'POST':
+        if puzzle.puzzle_type == 'MCQ':  # Changed from 'mcq' to 'MCQ'
+            # Handle MCQ submission
+            answer = request.POST.get('answer')
+            if answer:
+                submission = existing_submission if existing_submission else Submission(user=request.user, puzzle=puzzle)
+                submission.answer = answer
+                submission.is_correct = answer == puzzle.solution
+                submission.save()
+                
+                if submission.is_correct:
+                    if not existing_submission or not existing_submission.is_correct:
+                        user_profile.xp += puzzle.xp_reward
+                        user_profile.solved_puzzles.add(puzzle)
+                        user_profile.save()
+                        messages.success(request, f'🎉 Correct answer! You earned {puzzle.xp_reward} XP!')
+                    else:
+                        messages.success(request, '✅ Correct answer! You already completed this puzzle.')
+                else:
+                    messages.error(request, '❌ Incorrect answer. Try again!')
+        else:
+            # Handle coding puzzle submission
+            form = PuzzleSubmissionForm(request.POST, puzzle=puzzle)
+            if form.is_valid():
+                submission = existing_submission if existing_submission else Submission(user=request.user, puzzle=puzzle)
                 submission.code = form.cleaned_data['code']
                 submission.status = 'pending'
 
-            # Rest of validation logic remains the same
-            if puzzle.puzzle_type == 'mcq':
-                submission.save()
-                if submission.is_correct:
-                    if not existing_submission or not existing_submission.is_correct:
-                        user_profile.total_points += puzzle.points
-                        user_profile.puzzles_solved += 1
-                        user_profile.solved_puzzles.add(puzzle)
-                        user_profile.save()
-                    messages.success(request, f"Correct! You earned {puzzle.points} points!")
-                    return redirect('puzzle:detail', puzzle_id=puzzle_id)
-                else:
-                    messages.error(request, "Incorrect solution.")
-                    form = PuzzleSubmissionForm(puzzle=puzzle, initial={'answer': form.cleaned_data['answer']})
-            else:  # Coding puzzle
-                user_code = form.cleaned_data['code']
-                submission.code = user_code
-                submission.status = 'pending'  # Set initial status for coding puzzles
-
                 validation_prompt = f"""
-                    Validate this Python code solution against the problem description. Respond ONLY with a JSON object.
-                    Problem: {puzzle.description}
+                    You are a Python code validator. Evaluate this solution and respond with a JSON object.
                     
-                    Code:
+                    Problem: {puzzle.description}
+                    Expected Output/Behavior: {puzzle.test_cases if puzzle.test_cases else 'No specific test cases provided.'}
+                    
+                    User's Solution:
                     ```python
-                    {user_code}
+                    {submission.code}
                     ```
                     
-                    Return a JSON object with these fields:
-                    - is_valid: boolean
-                    - message: string (explanation)
-                    - errors: array of strings (if any)
+                    Validate the code and return a JSON object with:
+                    - "is_correct": true if the solution is correct, false otherwise
+                    - "feedback": one short line of feedback (error message if incorrect, success message if correct)
+                    
+                    Keep the feedback concise and specific. If incorrect, point out the main issue only.
                 """
 
                 try:
                     response = gemini_mini.generate_content(validation_prompt)
-                    # Add response cleaning and better error handling
                     response_text = response.text.strip()
-                    # Try to extract JSON if it's wrapped in ```json or ``` blocks
                     json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', response_text, re.DOTALL)
                     if json_match:
                         response_text = json_match.group(1)
                     
-                    try:
-                        validation_result = json.loads(response_text)
-                        logger.debug(f"Validation result: {validation_result}")
-                        
-                        if not isinstance(validation_result, dict):
-                            raise ValueError("Validation result is not a dictionary")
-                        
-                        if 'is_valid' not in validation_result or 'message' not in validation_result:
-                            raise ValueError("Missing required fields in validation result")
-                        
-                        if validation_result['is_valid']:
-                            submission.is_correct = True
-                            submission.status = 'completed'
-                            submission.save()
-                            if not existing_submission or not existing_submission.is_correct:
-                                user_profile.total_points += puzzle.points
-                                user_profile.puzzles_solved += 1
-                                user_profile.solved_puzzles.add(puzzle)
-                                user_profile.save()
-                            messages.success(request, f"Correct! You earned {puzzle.points} points!")
-                            return redirect('puzzle:detail', puzzle_id=puzzle_id)
-                        else:
-                            submission.status = 'failed'
-                            submission.save()
-                            error_message = validation_result.get('message', 'Invalid solution')
-                            messages.error(request, f"Incorrect solution: {error_message}")
-                            request.session[f'retry_code_{puzzle_id}'] = user_code
-                            
-                    except json.JSONDecodeError as je:
-                        logger.error(f"JSON parsing error: {str(je)}\nResponse text: {response_text}")
-                        messages.error(request, "Invalid response format from validation service.")
-                        submission.status = 'error'
+                    validation_result = json.loads(response_text)
+                    
+                    submission.feedback = validation_result.get('feedback', '')
+                    submission.is_correct = validation_result.get('is_correct', False)
+                    
+                    if submission.is_correct:
+                        submission.status = 'completed'
                         submission.save()
                         
+                        if not existing_submission or not existing_submission.is_correct:
+                            user_profile.xp += puzzle.xp_reward
+                            user_profile.solved_puzzles.add(puzzle)
+                            user_profile.save()
+                            messages.success(request, f'🎉 Correct solution! You earned {puzzle.xp_reward} XP!')
+                        else:
+                            messages.success(request, '✅ Correct solution! You already completed this puzzle.')
+                    else:
+                        submission.status = 'failed'
+                        submission.save()
+                        messages.error(request, f'❌ {submission.feedback}')
+                        request.session[f'retry_code_{puzzle_id}'] = submission.code
+                        
                 except Exception as e:
-                    logger.error(f"Validation error: {str(e)}\nFull traceback:", exc_info=True)
+                    logger.error(f"Validation error: {str(e)}", exc_info=True)
                     messages.error(request, "An error occurred during validation. Please try again.")
                     submission.status = 'error'
                     submission.save()
+                    request.session[f'retry_code_{puzzle_id}'] = submission.code
 
     else:
-        initial_data = {'code': stored_code} if stored_code else None
+        # GET request - show form
+        initial_data = {'code': stored_code} if stored_code else {}
         form = PuzzleSubmissionForm(puzzle=puzzle, initial=initial_data)
 
-    return render(request, 'puzzle/solve.html', {
-        'form': form,
+    # Convert test_cases to options for MCQ
+    mcq_options = []
+    selected_answer = None
+    if puzzle.puzzle_type == 'MCQ' and puzzle.test_cases:  # Changed from 'mcq' to 'MCQ'
+        try:
+            # Ensure test_cases is a dictionary
+            if isinstance(puzzle.test_cases, str):
+                options_dict = json.loads(puzzle.test_cases)
+            else:
+                options_dict = puzzle.test_cases
+            
+            # Debug logging
+            logger.debug(f"MCQ options dict: {options_dict}")
+            
+            mcq_options = [{'key': str(key), 'value': str(value)} for key, value in options_dict.items()]
+            
+            # Get selected answer from existing submission
+            if existing_submission:
+                selected_answer = existing_submission.answer
+        except Exception as e:
+            logger.error(f"Error processing MCQ options: {str(e)}")
+            mcq_options = []
+
+    context = {
         'puzzle': puzzle,
-        'submission': existing_submission
-    })
+        'form': form if puzzle.puzzle_type != 'MCQ' else None,  # Changed from 'mcq' to 'MCQ'
+        'submission': existing_submission,
+        'next_puzzle': next_puzzle,
+        'type_display': 'Multiple Choice' if puzzle.puzzle_type == 'MCQ' else 'Coding',  # Updated display text
+        'mcq_options': mcq_options,
+        'selected_answer': selected_answer,
+        'is_solved': existing_submission and existing_submission.is_correct
+    }
+    
+    return render(request, 'puzzle/solve.html', context)
 
 @login_required
 def submit_solution(request, puzzle_id):
@@ -188,7 +330,7 @@ def submit_solution(request, puzzle_id):
 
 def leaderboard(request):
     """Display the top 10 users by points."""
-    top_users = UserProfile.objects.all().order_by('-total_points')[:10]
+    top_users = Profile.objects.all().order_by('-xp')[:10]
     return render(request, 'puzzle/leaderboard.html', {'top_users': top_users})
 
 class CustomLoginView(LoginView):
@@ -218,13 +360,29 @@ def signup(request):
 
 @login_required
 def profile(request):
-    user_profile = request.user.userprofile
+    user_profile = request.user.profile
     submissions = Submission.objects.filter(user=request.user).order_by('-submitted_at')
+    
+    total_xp = user_profile.xp
+    puzzles_solved = submissions.filter(is_correct=True).count()
+    current_level = user_profile.level
+    
+    # Calculate XP progress for current level
+    xp_for_next_level = (current_level + 1) * 1000
+    xp_progress = (total_xp % 1000) / 10  # Convert to percentage
+    
+    # Get recent activity
+    recent_activity = submissions.order_by('-submitted_at')[:10]
+    
     context = {
         'user_profile': user_profile,
         'submissions': submissions,
-        'total_points': user_profile.total_points,
-        'puzzles_solved': user_profile.puzzles_solved,
+        'total_xp': total_xp,
+        'puzzles_solved': puzzles_solved,
+        'current_level': current_level,
+        'xp_progress': xp_progress,
+        'xp_for_next_level': xp_for_next_level,
+        'recent_activity': recent_activity
     }
     return render(request, 'puzzle/profile.html', context)
 
@@ -234,84 +392,313 @@ def logout_view(request):
         logout(request)
         messages.info(request, "You have been logged out successfully.")
     return redirect('puzzle:index')
+
 @login_required
 def ai_assistant(request):
-    """
-    Handle AI Assistant page rendering and chat interactions.
-    Groups chat history by date for better organization.
-    """
-    from django.db.models.functions import TruncDate
-    from django.utils import timezone
-    import logging
-    
-    logger = logging.getLogger(__name__)
-    
-    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if request.method == 'POST':
         try:
-            user_message = request.POST.get('message', '').strip()
-            if not user_message:
-                return JsonResponse({'error': 'Message cannot be empty'}, status=400)
+            data = json.loads(request.body)
+            message = data.get('message', '')
+            is_voice_input = data.get('is_voice_input', False)
+            voice_response = data.get('voice_response', False)
             
-            # Current timestamp
-            current_time = timezone.now()
+            # Get chat context for better responses
+            chat_context = get_chat_context(request.user)
             
-            # Save user message with the AI response in a single entry
-            chat_message = ChatMessage.objects.create(
-                user=request.user,
-                message=user_message,
-                timestamp=current_time
-            )
-            
-            # Generate AI response
-            prompt = f"""You are a helpful Python programming assistant.
-            Please help with the following question: {user_message}"""
-            
+            # Generate response using Gemini
             try:
+                # Create a prompt that includes PyPuzzle context and structure markers
+                prompt = f"""You are an AI assistant for the PyPuzzle application. 
+                {' Respond in a more conversational way since this is voice input.' if is_voice_input else ''}
+
+Key features of PyPuzzle that you should know about:
+1. Multiple puzzle types:
+   - MCQ (Multiple Choice Questions)
+   - Code Writing Challenges
+   - Code Debugging Tasks
+   - Algorithm Implementation
+2. Difficulty levels: Beginner, Intermediate, Advanced
+3. Topics covered:
+   - Basic Python syntax
+   - Data structures (lists, dictionaries, sets)
+   - Functions and OOP concepts
+   - Algorithms and problem-solving
+   - File handling and modules
+4. User progress tracking and achievements
+5. Interactive code execution and testing
+
+When responding:
+{'- Keep responses brief and conversational\n- Focus on clear explanations\n- Avoid code examples unless specifically requested' if is_voice_input else '- Start with a brief explanation\n- Include code examples with ## marker\n- Add key points with * marker\n- Add important notes with ! marker'}
+- Reference specific PyPuzzle features when relevant
+- Provide hints rather than complete solutions for puzzle-related questions
+- Encourage best coding practices and Python conventions
+
+Previous conversation context:
+{chat_context}
+
+User's {'voice message' if is_voice_input else 'question'}: {message}
+"""
+                
                 response = gemini_pro.generate_content(prompt)
-                ai_response_text = response.text
+                response_text = response.text.strip()
+                
+                # Format the response appropriately
+                if is_voice_input:
+                    # For voice input, keep response conversational
+                    formatted_response = response_text
+                    speech_text = response_text
+                else:
+                    # For text input, use structured formatting
+                    formatted_response = format_structured_response(response_text)
+                    if voice_response:
+                        # Clean the text for speech synthesis
+                        clean_text = re.sub(r'```.*?```', '', formatted_response, flags=re.DOTALL)
+                        clean_text = re.sub(r'[*#!]', '', clean_text)
+                        speech_text = ' '.join(clean_text.split())
+                    else:
+                        speech_text = None
+                
+                # Save the message and response to database
+                ChatMessage.objects.create(
+                    user=request.user,
+                    content=message,
+                    is_bot=False,
+                    voice_message=is_voice_input,
+                    timestamp=timezone.now()
+                )
+                
+                ChatMessage.objects.create(
+                    user=request.user,
+                    content=formatted_response,
+                    is_bot=True,
+                    voice_message=is_voice_input,
+                    timestamp=timezone.now()
+                )
+                
+                return JsonResponse({
+                    'message': formatted_response,
+                    'speech_text': speech_text,
+                    'is_voice_response': is_voice_input or voice_response
+                })
+                
             except Exception as e:
                 logger.error(f"Error generating AI response: {str(e)}")
-                ai_response_text = "Sorry, I couldn't generate a response at this time. Please try again later."
+                return JsonResponse({
+                    'error': 'Failed to generate response. Please try again.'
+                }, status=500)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    # Get chat history for the current user
+    chat_history = ChatMessage.objects.filter(user=request.user).order_by('timestamp')[:50]
+    chat_history_json = [{
+        'content': msg.content,
+        'is_bot': msg.is_bot,
+        'is_voice': msg.voice_message,
+        'timestamp': msg.timestamp.isoformat()
+    } for msg in chat_history]
+    
+    return render(request, 'puzzle/ai_assistant.html', {
+        'chat_history': chat_history,
+        'chat_history_json': json.dumps(chat_history_json)
+    })
+
+def format_structured_response(text):
+    """
+    Format the AI response with structured output markers.
+    Returns a string with appropriate markers for different content types.
+    """
+    try:
+        # Split the text into sections
+        sections = text.split('\n\n')
+        formatted_sections = []
+        
+        for section in sections:
+            if section.strip().startswith('```'):
+                # Code block
+                code = section.strip('```').strip()
+                formatted_sections.append(f'## {code}')
+            elif section.strip().startswith('- '):
+                # List items
+                items = section.strip().split('\n- ')
+                formatted_items = [f'* {item.strip()}' for item in items]
+                formatted_sections.append('\n'.join(formatted_items))
+            elif section.strip().startswith('Note:'):
+                # Important note
+                note = section.replace('Note:', '').strip()
+                formatted_sections.append(f'! {note}')
+            else:
+                # Regular text
+                formatted_sections.append(section)
+        
+        return '\n\n'.join(formatted_sections)
+    except Exception as e:
+        logger.error(f"Error formatting structured response: {str(e)}")
+        return text
+
+def get_chat_context(user, limit=5):
+    """Get recent chat context for better AI responses."""
+    recent_messages = ChatMessage.objects.filter(
+        user=user,
+        is_bot=False
+    ).order_by('-timestamp')[:limit]
+    
+    context = []
+    for msg in reversed(recent_messages):
+        context.append(f"User: {msg.content}")
+        if msg.response:
+            context.append(f"Assistant: {msg.response}")
+    
+    return "\n".join(context)
+
+@login_required
+def update_profile(request):
+    """Update user profile information."""
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, instance=request.user.profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('puzzle:profile')
+    else:
+        form = UserProfileForm(instance=request.user.profile)
+    
+    return render(request, 'puzzle/update_profile.html', {
+        'form': form,
+        'user': request.user
+    })
+
+@login_required
+def chat(request):
+    """Handle chat messages from the virtual assistant."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            message = data.get('message', '')
             
-            # Update the message with the response
-            chat_message.response = ai_response_text
-            chat_message.save()
+            # Process the message and generate a response using Gemini 2.0 Flash
+            try:
+                response = gemini_pro.generate_content(message)
+                response_text = response.text.strip()
+                
+                # Return the response
+                return JsonResponse({
+                    'message': response_text,
+                    'timestamp': timezone.now().isoformat()
+                })
+            except Exception as e:
+                logger.error(f"Error generating AI response: {str(e)}")
+                return JsonResponse({
+                    'error': 'Failed to generate response. Please try again.'
+                }, status=500)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+def roadmap(request):
+    topics = RoadmapTopic.objects.all().order_by('order')
+    
+    # Get solved puzzles for the user
+    solved_puzzles = Submission.objects.filter(
+        user=request.user,
+        is_correct=True
+    ).values_list('puzzle_id', flat=True)
+    
+    # Add progress information to each topic
+    for topic in topics:
+        topic_puzzles = topic.puzzles.all()
+        total_puzzles = topic_puzzles.count()
+        solved_count = topic_puzzles.filter(id__in=solved_puzzles).count()
+        
+        topic.total_puzzles = total_puzzles
+        topic.solved_puzzles = solved_count
+        topic.progress = (solved_count / total_puzzles * 100) if total_puzzles > 0 else 0
+    
+    context = {
+        'topics': topics
+    }
+    
+    return render(request, 'puzzle/roadmap.html', context)
+
+@login_required
+def process_voice_input(request):
+    if request.method == 'POST' and request.FILES.get('audio'):
+        try:
+            audio_file = request.FILES['audio']
             
-            # Format date for consistency
-            message_date = current_time.strftime('%Y-%m-%d')
+            # Save the audio file temporarily
+            temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp')
+            os.makedirs(temp_dir, exist_ok=True)
+            temp_path = os.path.join(temp_dir, f'voice_input_{request.user.id}_{int(time.time())}.wav')
+            
+            with open(temp_path, 'wb') as f:
+                f.write(audio_file.read())
+            
+            # TODO: Implement actual speech-to-text processing here
+            # For now, we'll return a mock response
+            # You can integrate with services like Google Cloud Speech-to-Text or Azure Speech Services
+            
+            # Clean up the temporary file
+            os.remove(temp_path)
             
             return JsonResponse({
-                'response': ai_response_text,
-                'user_message_id': chat_message.id,
-                'user_timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'ai_timestamp': current_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'message_date': message_date
+                'text': 'This is a mock response. Please implement actual speech-to-text processing.',
+                'success': True
             })
             
         except Exception as e:
-            logger.error(f"AI Assistant error: {str(e)}")
-            return JsonResponse({'error': 'Failed to process your request'}, status=500)
+            return JsonResponse({
+                'error': str(e),
+                'success': False
+            }, status=500)
     
-    # For GET request: Fetch and organize chat history by date
-    all_messages = ChatMessage.objects.filter(user=request.user).annotate(
-        date_str=TruncDate('timestamp')
-    ).order_by('-date_str', 'timestamp')
+    return JsonResponse({
+        'error': 'Invalid request',
+        'success': False
+    }, status=400)
+
+@login_required
+def save_session_history(request):
+    """Save chat session history to the database."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            messages = data.get('messages', [])
+            
+            # Save each message to the database
+            for msg in messages:
+                ChatMessage.objects.create(
+                    user=request.user,
+                    content=msg.get('content', ''),
+                    is_bot=msg.get('is_bot', False),
+                    timestamp=timezone.now()
+                )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Session history saved successfully'
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid JSON data'
+            }, status=400)
+        except Exception as e:
+            logger.error(f"Error saving session history: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Failed to save session history'
+            }, status=500)
     
-    # Group messages by date
-    date_grouped_history = {}
-    for message in all_messages:
-        date_key = message.date_str.strftime('%Y-%m-%d')
-        if date_key not in date_grouped_history:
-            date_grouped_history[date_key] = []
-        date_grouped_history[date_key].append(message)
-    
-    # Sort dates in reverse chronological order (newest first)
-    sorted_dates = sorted(date_grouped_history.keys(), reverse=True)
-    
-    # Reorganize the dictionary to maintain order
-    sorted_history = {date: date_grouped_history[date] for date in sorted_dates}
-    
-    return render(request, 'puzzle/ai_assistant.html', {
-        'chat_history': all_messages,
-        'date_grouped_history': sorted_history
-    })
+    return JsonResponse({
+        'success': False,
+        'error': 'Method not allowed'
+    }, status=405)
+

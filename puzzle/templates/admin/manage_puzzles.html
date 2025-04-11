@@ -116,6 +116,10 @@
     .badge-code {
         background: var(--ai-warning);
     }
+
+    .badge-topic {
+        background: var(--ai-info);
+    }
 </style>
 {% endblock %}
 
@@ -124,11 +128,16 @@
     <div class="action-header">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h3 mb-0 text-light animate-glow">
-                <i class="bi bi-puzzle me-2"></i>Puzzle Management
+                <i class="bi bi-puzzle me-2"></i>Roadmap Puzzle Management
             </h1>
-            <a href="{% url 'custom_admin:puzzle_puzzle_add' %}" class="btn btn-outline-neon">
-                <i class="bi bi-plus-lg me-2"></i>Create Puzzle
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'custom_admin:generate-puzzles' %}" class="btn btn-outline-neon">
+                    <i class="bi bi-magic me-2"></i>Generate Puzzles
+                </a>
+                <a href="{% url 'custom_admin:puzzle_puzzle_add' %}" class="btn btn-outline-neon">
+                    <i class="bi bi-plus-lg me-2"></i>Create Puzzle
+                </a>
+            </div>
         </div>
 
         <div class="category-filter">
@@ -182,10 +191,11 @@
             <thead>
                 <tr>
                     <th>Title</th>
+                    <th>Roadmap Topic</th>
                     <th>Category</th>
                     <th>Level</th>
-                    <th>Type</th> <!-- Added Type column -->
-                    <th>Points</th>
+                    <th>Type</th>
+                    <th>XP Reward</th>
                     <th>Created</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -196,6 +206,15 @@
                     <td>
                         <span class="status-indicator bg-success"></span>
                         <span class="text-light">{{ puzzle.title }}</span>
+                    </td>
+                    <td>
+                        {% if puzzle.roadmap_topic %}
+                            <span class="badge rounded-pill badge-topic">
+                                {{ puzzle.roadmap_topic.title }}
+                            </span>
+                        {% else %}
+                            <span class="text-muted">Not Assigned</span>
+                        {% endif %}
                     </td>
                     <td>
                         <span class="badge rounded-pill bg-primary">
@@ -212,7 +231,7 @@
                             {{ puzzle.puzzle_type|capfirst }}
                         </span>
                     </td>
-                    <td>{{ puzzle.points }}</td>
+                    <td>{{ puzzle.xp_reward }}</td>
                     <td>{{ puzzle.created_at|date:"M d, Y" }}</td>
                     <td class="text-end">
                         <div class="d-flex gap-2 justify-content-end">
@@ -233,14 +252,19 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7"> <!-- Updated colspan to 7 due to added Type column -->
+                    <td colspan="8">
                         <div class="empty-state">
                             <i class="bi bi-puzzle display-5 text-muted mb-3 animate-glow"></i>
                             <h3 class="h5 text-light">No Puzzles Found</h3>
-                            <p class="text-muted">Start by creating a new puzzle</p>
-                            <a href="{% url 'custom_admin:puzzle_puzzle_add' %}" class="btn btn-outline-neon mt-2">
-                                <i class="bi bi-plus-lg me-2"></i>Create Puzzle
-                            </a>
+                            <p class="text-muted">Start by generating or creating a new puzzle for the roadmap</p>
+                            <div class="d-flex justify-content-center gap-2 mt-2">
+                                <a href="{% url 'custom_admin:generate-puzzles' %}" class="btn btn-outline-neon">
+                                    <i class="bi bi-magic me-2"></i>Generate Puzzles
+                                </a>
+                                <a href="{% url 'custom_admin:puzzle_puzzle_add' %}" class="btn btn-outline-neon">
+                                    <i class="bi bi-plus-lg me-2"></i>Create Puzzle
+                                </a>
+                            </div>
                         </div>
                     </td>
                 </tr>

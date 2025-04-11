@@ -125,7 +125,7 @@
             </h1>
             <div class="d-flex gap-2">
                 <a href="{% url 'custom_admin:custom-dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
-                <a href="{% url 'custom_admin:puzzle_userprofile_add' %}" class="btn btn-primary">Add New User</a>
+                <a href="{% url 'custom_admin:puzzle_profile_add' %}" class="btn btn-primary">Add New User</a>
             </div>
         </div>
 
@@ -135,7 +135,8 @@
                     <tr>
                         <th>Username</th>
                         <th>Email</th>
-                        <th>Points</th>
+                        <th>XP</th>
+                        <th>Level</th>
                         <th>Solved Puzzles</th>
                         <th>Actions</th>
                     </tr>
@@ -145,17 +146,18 @@
                     <tr>
                         <td>{{ profile.user.username }}</td>
                         <td>{{ profile.user.email }}</td>
-                        <td>{{ profile.total_points }}</td>
+                        <td>{{ profile.xp }}</td>
+                        <td>{{ profile.level }}</td>
                         <td>{{ profile.puzzles_solved }}</td>
                         <td>
                             <div class="d-flex gap-2">
-                                <a href="{% url 'custom_admin:puzzle_userprofile_change' profile.id %}" 
+                                <a href="{% url 'custom_admin:puzzle_profile_change' profile.id %}" 
                                    class="btn btn-warning btn-sm"
                                    data-bs-toggle="tooltip" 
                                    title="Edit User">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <a href="{% url 'custom_admin:puzzle_userprofile_delete' profile.id %}" 
+                                <a href="{% url 'custom_admin:puzzle_profile_delete' profile.id %}" 
                                    class="btn btn-danger btn-sm"
                                    data-bs-toggle="tooltip" 
                                    title="Delete User">
@@ -166,7 +168,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <i class="bi bi-people display-5 text-muted mb-3 animate-glow"></i>
                             <h3 class="h5 text-light">No Users Found</h3>
                         </td>

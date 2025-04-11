@@ -1,155 +1,258 @@
 {% extends 'puzzle/base.html' %}
 
-{% block title %}Profile - {{ user_profile.user.username }}{% endblock %}
+{% block title %}Profile - {{ user.username }}{% endblock %}
 
 {% block extrastyle %}
 <style>
-    .card {
-        background-color: var(--rpg-slate);
-        border: 1px solid rgba(218, 165, 32, 0.2);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    .profile-header {
+        background: var(--bg-medium);
+        padding: 2rem;
+        border-radius: 15px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
     }
-    .card-title {
+
+    .profile-info {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: var(--rpg-gold);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+        font-weight: bold;
+    }
+
+    .user-details {
+        flex-grow: 1;
+    }
+
+    .user-details h1 {
         color: var(--rpg-gold);
-        font-family: 'MedievalSharp', cursive;
+        margin-bottom: 0.5rem;
     }
-    .card-text {
-        color: var(--rpg-light);
+
+    .user-meta {
+        color: var(--text-muted);
+        font-size: 0.9rem;
     }
-    .table {
-        color: var(--rpg-light);
-        background-color: var(--rpg-slate);
+
+    .profile-actions {
+        display: flex;
+        gap: 1rem;
     }
-    .table thead th {
-        background-color: rgba(218, 165, 32, 0.1);
-        border-bottom: 2px solid var(--rpg-gold);
-        color: var(--rpg-gold);
-    }
-    .table tbody tr {
-        transition: background-color 0.2s ease;
-    }
-    .table tbody tr:hover {
-        background-color: rgba(218, 165, 32, 0.05);
-    }
-    .badge-success {
-        background-color: #2e7d32;
-    }
-    .badge-danger {
-        background-color: var(--rpg-red);
-    }
-    .btn-primary {
-        background-color: var(--rpg-gold);
-        border-color: var(--rpg-gold);
+
+    .edit-profile-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--rpg-gold);
         color: #000;
-        transition: background-color 0.2s ease;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
     }
-    .btn-primary:hover {
-        background-color: rgba(218, 165, 32, 0.8);
-    }
-    .btn-secondary {
-        border-color: var(--rpg-gold);
-        color: var(--rpg-gold);
-        transition: background-color 0.2s ease;
-    }
-    .btn-secondary:hover {
-        background-color: rgba(218, 165, 32, 0.2);
+
+    .edit-profile-btn:hover {
+        background: var(--rpg-gold-light);
+        transform: translateY(-2px);
         color: #000;
+        text-decoration: none;
     }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+
+    .stat-card {
+        background: var(--bg-dark);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--rpg-gold);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .progress-section {
+        margin-top: 2rem;
+    }
+
+    .progress-bar {
+        height: 8px;
+        background: var(--bg-dark);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--rpg-gold);
+        width: 0;
+        transition: width 1s ease;
+    }
+
+    .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
     .solved-list {
         list-style: none;
-        padding-left: 0;
+        padding: 0;
     }
+
     .solved-list li {
-        padding: 0.5rem 0;
-        border-bottom: 1px solid rgba(218, 165, 32, 0.1);
+        padding: 1rem;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
+
     .solved-list li:last-child {
-        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .solved-list .text-muted {
+        color: var(--text-light) !important;
+    }
+
+    .btn-retry {
+        background: var(--rpg-slate);
+        border: none;
+    }
+
+    .btn-retry:hover {
+        background: var(--rpg-slate-dark);
+    }
+
+    .btn-details {
+        background: var(--rpg-gold);
+        border: none;
+    }
+
+    .btn-details:hover {
+        background: var(--rpg-gold-dark);
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4" style="color: var(--rpg-gold); font-family: 'MedievalSharp', cursive;">
-        <i class="bi bi-person-circle me-2"></i>{{ user_profile.user.username }}'s Profile
-    </h2>
+    <div class="profile-header">
+        <div class="profile-info">
+            <div class="avatar">
+                {{ user.username|make_list|first|upper }}
+            </div>
+            <div class="user-details">
+                <h1>{{ user.username }}</h1>
+                <div class="user-meta">
+                    <span>Member since {{ user.date_joined|date:"F j, Y" }}</span>
+                    <a href="{% url 'puzzle:update_profile' %}" class="edit-profile-btn ms-3">
+                        <i class="bi bi-pencil-square"></i>
+                        Edit Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value">
+                    <i class="bi bi-star-fill"></i>
+                    {{ total_xp }}
+                </div>
+                <div class="stat-label">Total XP</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">
+                    <i class="bi bi-trophy-fill"></i>
+                    {{ current_level }}
+                </div>
+                <div class="stat-label">Current Level</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">
+                    <i class="bi bi-check-circle-fill"></i>
+                    {{ puzzles_solved }}
+                </div>
+                <div class="stat-label">Puzzles Solved</div>
+            </div>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-labels">
+                <span>Level {{ current_level }}</span>
+                <span>{{ xp_progress }}% to Level {{ current_level|add:"1" }}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: {{ xp_progress }}%"></div>
+            </div>
+            <div class="text-muted text-center mt-2">
+                {{ xp_for_next_level }} XP needed for next level
+            </div>
+        </div>
+    </div>
 
     <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Stats</h5>
-                    <p class="card-text">
-                        <strong>Total Points:</strong> {{ total_points }} <i class="bi bi-star-fill text-warning ms-1"></i><br>
-                        <strong>Puzzles Solved:</strong> {{ puzzles_solved }} <i class="bi bi-check-circle-fill text-success ms-1"></i>
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5 class="card-title">Solved Puzzles</h5>
-                    {% if user_profile.solved_puzzles.all %}
-                    <ul class="solved-list">
-                        {% for puzzle in user_profile.solved_puzzles.all %}
-                        <li>
-                            <span class="text-muted">{{ puzzle.title }}</span>
-                            <a href="{% url 'puzzle:solve' puzzle.id %}" class="btn btn-secondary btn-sm float-end ms-2">
-                                <i class="bi bi-terminal me-1"></i>Retry
-                            </a>
-                            <a href="{% url 'puzzle:detail' puzzle.id %}" class="btn btn-primary btn-sm float-end">
-                                <i class="bi bi-eye me-1"></i>Details
-                            </a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="card-text text-muted">No puzzles solved yet. Start solving now!</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Your Submissions</h5>
-                    {% if submissions %}
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Puzzle</th>
-                                    <th>Status</th>
-                                    <th>Submitted At</th>
-                                    <th>Details</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for submission in submissions %}
-                                <tr>
-                                    <td>{{ submission.puzzle.title }}</td>
-                                    <td>
-                                        <span class="badge {% if submission.is_correct %}badge-success{% else %}badge-danger{% endif %}">
-                                            {{ submission.is_correct|yesno:"Correct,Incorrect" }}
-                                        </span>
-                                    </td>
-                                    <td>{{ submission.submitted_at|date:"Y-m-d H:i" }}</td>
-                                    <td>
-                                        {% if submission.feedback %}
-                                        <small class="text-muted">{{ submission.feedback|truncatechars:50 }}</small>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <h5 class="card-title">Recent Activity</h5>
+                    {% if recent_activity %}
+                    <div class="solved-list">
+                        {% for submission in recent_activity %}
+                        <li>
+                            <span class="text-muted">{{ submission.puzzle.title }}</span>
+                            <div class="btn-group">
+                                <a href="{% url 'puzzle:solve' submission.puzzle.id %}" class="btn btn-sm btn-retry">
+                                    <i class="bi bi-terminal me-1"></i>Retry
+                                </a>
+                                <a href="{% url 'puzzle:detail' submission.puzzle.id %}" class="btn btn-sm btn-details">
+                                    <i class="bi bi-eye me-1"></i>Details
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
                     </div>
                     {% else %}
-                    <p class="card-text text-muted">No submissions yet. Try solving a puzzle!</p>
+                    <p class="text-muted">No recent activity. Start solving puzzles!</p>
                     {% endif %}
                 </div>
             </div>

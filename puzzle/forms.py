@@ -1,5 +1,5 @@
 from django import forms
-from .models import Submission, Puzzle
+from .models import Submission, Puzzle, Profile
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
@@ -31,10 +31,10 @@ class PuzzleSubmissionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.puzzle:
             if self.puzzle.puzzle_type == 'mcq':
-                # Use test_cases for MCQ choices
-                self.fields['answer'].widget = forms.Select(
-                    choices=[('', 'Select an option')] + [(k, v) for k, v in self.puzzle.test_cases.items()],
-                    attrs={'class': 'form-control mb-3'}
+                # Use RadioSelect for MCQ choices
+                self.fields['answer'].widget = forms.RadioSelect(
+                    choices=[(k, v) for k, v in self.puzzle.test_cases.items()],
+                    attrs={'class': 'mcq-radio'}
                 )
                 self.fields['code'].widget = forms.HiddenInput()
             else:
@@ -127,3 +127,35 @@ class EmailAuthenticationForm(AuthenticationForm):
             except User.DoesNotExist:
                 raise ValidationError("Invalid email address")
         return username
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['bio', 'github_username', 'linkedin_url']
+        widgets = {
+            'bio': forms.Textarea(attrs={
+                'class': 'form-control mb-3',
+                'placeholder': 'Tell us about yourself',
+                'rows': 4
+            }),
+            'github_username': forms.TextInput(attrs={
+                'class': 'form-control mb-3',
+                'placeholder': 'Your GitHub username'
+            }),
+            'linkedin_url': forms.URLInput(attrs={
+                'class': 'form-control mb-3',
+                'placeholder': 'Your LinkedIn profile URL'
+            })
+        }
+
+    def clean_github_username(self):
+        github_username = self.cleaned_data.get('github_username')
+        if github_username and not github_username.isalnum():
+            raise ValidationError("GitHub username can only contain letters and numbers")
+        return github_username
+
+    def clean_linkedin_url(self):
+        linkedin_url = self.cleaned_data.get('linkedin_url')
+        if linkedin_url and not linkedin_url.startswith('https://www.linkedin.com/'):
+            raise ValidationError("Please enter a valid LinkedIn profile URL")
+        return linkedin_url
